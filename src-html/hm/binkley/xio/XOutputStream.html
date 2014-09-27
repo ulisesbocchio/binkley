@@ -1,0 +1,223 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+<title>Source code</title>
+<link rel="stylesheet" type="text/css" href="../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<div class="sourceContainer">
+<pre><span class="sourceLineNo">001</span>package hm.binkley.xio;<a name="line.1"></a>
+<span class="sourceLineNo">002</span><a name="line.2"></a>
+<span class="sourceLineNo">003</span>import javax.annotation.Nonnull;<a name="line.3"></a>
+<span class="sourceLineNo">004</span>import java.io.Closeable;<a name="line.4"></a>
+<span class="sourceLineNo">005</span>import java.io.Flushable;<a name="line.5"></a>
+<span class="sourceLineNo">006</span>import java.io.IOException;<a name="line.6"></a>
+<span class="sourceLineNo">007</span>import java.io.OutputStream;<a name="line.7"></a>
+<span class="sourceLineNo">008</span><a name="line.8"></a>
+<span class="sourceLineNo">009</span>/**<a name="line.9"></a>
+<span class="sourceLineNo">010</span> * @author &lt;a href="mailto:binkley@alumni.rice.edu"&gt;B. K. Oxley (binkley)&lt;/a&gt;<a name="line.10"></a>
+<span class="sourceLineNo">011</span> * @todo Javadoc<a name="line.11"></a>
+<span class="sourceLineNo">012</span> */<a name="line.12"></a>
+<span class="sourceLineNo">013</span>public interface XOutputStream<a name="line.13"></a>
+<span class="sourceLineNo">014</span>        extends Closeable, Flushable {<a name="line.14"></a>
+<span class="sourceLineNo">015</span>    /**<a name="line.15"></a>
+<span class="sourceLineNo">016</span>     * Creates a JDK {@code OutputStream} implementation forwarding all calls to this {@code<a name="line.16"></a>
+<span class="sourceLineNo">017</span>     * XOutputStream}.<a name="line.17"></a>
+<span class="sourceLineNo">018</span>     *<a name="line.18"></a>
+<span class="sourceLineNo">019</span>     * @return the new JDK output stream, never missing<a name="line.19"></a>
+<span class="sourceLineNo">020</span>     */<a name="line.20"></a>
+<span class="sourceLineNo">021</span>    @Nonnull<a name="line.21"></a>
+<span class="sourceLineNo">022</span>    default JOutputStream asOutputStream() {<a name="line.22"></a>
+<span class="sourceLineNo">023</span>        return new JOutputStream(this);<a name="line.23"></a>
+<span class="sourceLineNo">024</span>    }<a name="line.24"></a>
+<span class="sourceLineNo">025</span><a name="line.25"></a>
+<span class="sourceLineNo">026</span>    /**<a name="line.26"></a>
+<span class="sourceLineNo">027</span>     * Writes the specified byte to this output stream. The general contract for {@code write} is<a name="line.27"></a>
+<span class="sourceLineNo">028</span>     * that one byte is written to the output stream. The byte to be written is the eight low-order<a name="line.28"></a>
+<span class="sourceLineNo">029</span>     * bits of the argument {@code b}. The 24 high-order bits of {@code b} are ignored. &lt;p&gt;<a name="line.29"></a>
+<span class="sourceLineNo">030</span>     * Subclasses of {@code OutputStream} must provide an implementation for this method.<a name="line.30"></a>
+<span class="sourceLineNo">031</span>     *<a name="line.31"></a>
+<span class="sourceLineNo">032</span>     * @param b the {@code byte}.<a name="line.32"></a>
+<span class="sourceLineNo">033</span>     *<a name="line.33"></a>
+<span class="sourceLineNo">034</span>     * @throws IOException if an I/O error occurs. In particular, an {@code IOException} may be<a name="line.34"></a>
+<span class="sourceLineNo">035</span>     * thrown if the output stream has been closed.<a name="line.35"></a>
+<span class="sourceLineNo">036</span>     */<a name="line.36"></a>
+<span class="sourceLineNo">037</span>    void write(final int b)<a name="line.37"></a>
+<span class="sourceLineNo">038</span>            throws IOException;<a name="line.38"></a>
+<span class="sourceLineNo">039</span><a name="line.39"></a>
+<span class="sourceLineNo">040</span>    /**<a name="line.40"></a>
+<span class="sourceLineNo">041</span>     * Writes {@code b.length} bytes from the specified byte array to this output stream. The<a name="line.41"></a>
+<span class="sourceLineNo">042</span>     * general contract for {@code write(b)} is that it should have exactly the same effect as the<a name="line.42"></a>
+<span class="sourceLineNo">043</span>     * call {@code write(b, 0, b.length)}.<a name="line.43"></a>
+<span class="sourceLineNo">044</span>     *<a name="line.44"></a>
+<span class="sourceLineNo">045</span>     * @param b the data.<a name="line.45"></a>
+<span class="sourceLineNo">046</span>     *<a name="line.46"></a>
+<span class="sourceLineNo">047</span>     * @throws IOException if an I/O error occurs.<a name="line.47"></a>
+<span class="sourceLineNo">048</span>     * @see XOutputStream#write(byte[], int, int)<a name="line.48"></a>
+<span class="sourceLineNo">049</span>     */<a name="line.49"></a>
+<span class="sourceLineNo">050</span>    default void write(@Nonnull final byte[] b)<a name="line.50"></a>
+<span class="sourceLineNo">051</span>            throws IOException {<a name="line.51"></a>
+<span class="sourceLineNo">052</span>        write(b, 0, b.length);<a name="line.52"></a>
+<span class="sourceLineNo">053</span>    }<a name="line.53"></a>
+<span class="sourceLineNo">054</span><a name="line.54"></a>
+<span class="sourceLineNo">055</span>    /**<a name="line.55"></a>
+<span class="sourceLineNo">056</span>     * Writes {@code len} bytes from the specified byte array starting at offset {@code off} to this<a name="line.56"></a>
+<span class="sourceLineNo">057</span>     * output stream. The general contract for {@code write(b, off, len)} is that some of the bytes<a name="line.57"></a>
+<span class="sourceLineNo">058</span>     * in the array {@code b} are written to the output stream in order; element {@code b[off]} is<a name="line.58"></a>
+<span class="sourceLineNo">059</span>     * the first byte written and {@code b[off+len-1]} is the last byte written by this operation.<a name="line.59"></a>
+<span class="sourceLineNo">060</span>     * &lt;p&gt; The {@code write} method of {@code OutputStream} calls the write method of one argument<a name="line.60"></a>
+<span class="sourceLineNo">061</span>     * on each of the bytes to be written out. Subclasses are encouraged to override this method and<a name="line.61"></a>
+<span class="sourceLineNo">062</span>     * provide a more efficient implementation. &lt;p&gt; If {@code b} is {@code null}, a {@code<a name="line.62"></a>
+<span class="sourceLineNo">063</span>     * NullPointerException} is thrown. &lt;p&gt; If {@code off} is negative, or {@code len} is negative,<a name="line.63"></a>
+<span class="sourceLineNo">064</span>     * or {@code off+len} is greater than the length of the array {@code b}, then an<a name="line.64"></a>
+<span class="sourceLineNo">065</span>     * &lt;tt&gt;IndexOutOfBoundsException&lt;/tt&gt; is thrown.<a name="line.65"></a>
+<span class="sourceLineNo">066</span>     *<a name="line.66"></a>
+<span class="sourceLineNo">067</span>     * @param b the data.<a name="line.67"></a>
+<span class="sourceLineNo">068</span>     * @param off the start offset in the data.<a name="line.68"></a>
+<span class="sourceLineNo">069</span>     * @param len the number of bytes to write.<a name="line.69"></a>
+<span class="sourceLineNo">070</span>     *<a name="line.70"></a>
+<span class="sourceLineNo">071</span>     * @throws IOException if an I/O error occurs. In particular, an {@code IOException} is thrown<a name="line.71"></a>
+<span class="sourceLineNo">072</span>     * if the output stream is closed.<a name="line.72"></a>
+<span class="sourceLineNo">073</span>     */<a name="line.73"></a>
+<span class="sourceLineNo">074</span>    default void write(@Nonnull final byte[] b, final int off, final int len)<a name="line.74"></a>
+<span class="sourceLineNo">075</span>            throws IOException {<a name="line.75"></a>
+<span class="sourceLineNo">076</span>        if (0 == len)<a name="line.76"></a>
+<span class="sourceLineNo">077</span>            return;<a name="line.77"></a>
+<span class="sourceLineNo">078</span>        if (0 &gt; off || off &gt; b.length || 0 &gt; len || off + len &gt; b.length || 0 &gt; off + len)<a name="line.78"></a>
+<span class="sourceLineNo">079</span>            throw new IndexOutOfBoundsException();<a name="line.79"></a>
+<span class="sourceLineNo">080</span>        for (int i = 0; i &lt; len; i++)<a name="line.80"></a>
+<span class="sourceLineNo">081</span>            write(b[off + i]);<a name="line.81"></a>
+<span class="sourceLineNo">082</span>    }<a name="line.82"></a>
+<span class="sourceLineNo">083</span><a name="line.83"></a>
+<span class="sourceLineNo">084</span>    /**<a name="line.84"></a>
+<span class="sourceLineNo">085</span>     * Flushes this output stream and forces any buffered output bytes to be written out. The<a name="line.85"></a>
+<span class="sourceLineNo">086</span>     * general contract of {@code flush} is that calling it is an indication that, if any bytes<a name="line.86"></a>
+<span class="sourceLineNo">087</span>     * previously written have been buffered by the implementation of the output stream, such bytes<a name="line.87"></a>
+<span class="sourceLineNo">088</span>     * should immediately be written to their intended destination. &lt;p&gt; If the intended destination<a name="line.88"></a>
+<span class="sourceLineNo">089</span>     * of this stream is an abstraction provided by the underlying operating system, for example a<a name="line.89"></a>
+<span class="sourceLineNo">090</span>     * file, then flushing the stream guarantees only that bytes previously written to the stream<a name="line.90"></a>
+<span class="sourceLineNo">091</span>     * are passed to the operating system for writing; it does not guarantee that they are actually<a name="line.91"></a>
+<span class="sourceLineNo">092</span>     * written to a physical device such as a disk drive. &lt;p&gt; The {@code flush} method of {@code<a name="line.92"></a>
+<span class="sourceLineNo">093</span>     * OutputStream} does nothing.<a name="line.93"></a>
+<span class="sourceLineNo">094</span>     *<a name="line.94"></a>
+<span class="sourceLineNo">095</span>     * @throws IOException if an I/O error occurs.<a name="line.95"></a>
+<span class="sourceLineNo">096</span>     */<a name="line.96"></a>
+<span class="sourceLineNo">097</span>    default void flush()<a name="line.97"></a>
+<span class="sourceLineNo">098</span>            throws IOException {<a name="line.98"></a>
+<span class="sourceLineNo">099</span>    }<a name="line.99"></a>
+<span class="sourceLineNo">100</span><a name="line.100"></a>
+<span class="sourceLineNo">101</span>    /**<a name="line.101"></a>
+<span class="sourceLineNo">102</span>     * Closes this output stream and releases any system resources associated with this stream. The<a name="line.102"></a>
+<span class="sourceLineNo">103</span>     * general contract of {@code close} is that it closes the output stream. A closed stream cannot<a name="line.103"></a>
+<span class="sourceLineNo">104</span>     * perform output operations and cannot be reopened. &lt;p&gt; The {@code close} method of {@code<a name="line.104"></a>
+<span class="sourceLineNo">105</span>     * OutputStream} does nothing.<a name="line.105"></a>
+<span class="sourceLineNo">106</span>     *<a name="line.106"></a>
+<span class="sourceLineNo">107</span>     * @throws IOException if an I/O error occurs.<a name="line.107"></a>
+<span class="sourceLineNo">108</span>     */<a name="line.108"></a>
+<span class="sourceLineNo">109</span>    default void close()<a name="line.109"></a>
+<span class="sourceLineNo">110</span>            throws IOException {<a name="line.110"></a>
+<span class="sourceLineNo">111</span>    }<a name="line.111"></a>
+<span class="sourceLineNo">112</span><a name="line.112"></a>
+<span class="sourceLineNo">113</span>    class JOutputStream<a name="line.113"></a>
+<span class="sourceLineNo">114</span>            extends OutputStream {<a name="line.114"></a>
+<span class="sourceLineNo">115</span>        private final XOutputStream out;<a name="line.115"></a>
+<span class="sourceLineNo">116</span><a name="line.116"></a>
+<span class="sourceLineNo">117</span>        protected JOutputStream(final XOutputStream out) {<a name="line.117"></a>
+<span class="sourceLineNo">118</span>            this.out = out;<a name="line.118"></a>
+<span class="sourceLineNo">119</span>        }<a name="line.119"></a>
+<span class="sourceLineNo">120</span><a name="line.120"></a>
+<span class="sourceLineNo">121</span>        @Override<a name="line.121"></a>
+<span class="sourceLineNo">122</span>        public void write(final int b)<a name="line.122"></a>
+<span class="sourceLineNo">123</span>                throws IOException {<a name="line.123"></a>
+<span class="sourceLineNo">124</span>            out.write(b);<a name="line.124"></a>
+<span class="sourceLineNo">125</span>        }<a name="line.125"></a>
+<span class="sourceLineNo">126</span><a name="line.126"></a>
+<span class="sourceLineNo">127</span>        @Override<a name="line.127"></a>
+<span class="sourceLineNo">128</span>        public void write(@Nonnull final byte[] b)<a name="line.128"></a>
+<span class="sourceLineNo">129</span>                throws IOException {<a name="line.129"></a>
+<span class="sourceLineNo">130</span>            out.write(b);<a name="line.130"></a>
+<span class="sourceLineNo">131</span>        }<a name="line.131"></a>
+<span class="sourceLineNo">132</span><a name="line.132"></a>
+<span class="sourceLineNo">133</span>        @Override<a name="line.133"></a>
+<span class="sourceLineNo">134</span>        public void write(@Nonnull final byte[] b, final int off, final int len)<a name="line.134"></a>
+<span class="sourceLineNo">135</span>                throws IOException {<a name="line.135"></a>
+<span class="sourceLineNo">136</span>            out.write(b, off, len);<a name="line.136"></a>
+<span class="sourceLineNo">137</span>        }<a name="line.137"></a>
+<span class="sourceLineNo">138</span><a name="line.138"></a>
+<span class="sourceLineNo">139</span>        @Override<a name="line.139"></a>
+<span class="sourceLineNo">140</span>        public void flush()<a name="line.140"></a>
+<span class="sourceLineNo">141</span>                throws IOException {<a name="line.141"></a>
+<span class="sourceLineNo">142</span>            out.flush();<a name="line.142"></a>
+<span class="sourceLineNo">143</span>        }<a name="line.143"></a>
+<span class="sourceLineNo">144</span><a name="line.144"></a>
+<span class="sourceLineNo">145</span>        @Override<a name="line.145"></a>
+<span class="sourceLineNo">146</span>        public void close()<a name="line.146"></a>
+<span class="sourceLineNo">147</span>                throws IOException {<a name="line.147"></a>
+<span class="sourceLineNo">148</span>            out.close();<a name="line.148"></a>
+<span class="sourceLineNo">149</span>        }<a name="line.149"></a>
+<span class="sourceLineNo">150</span>    }<a name="line.150"></a>
+<span class="sourceLineNo">151</span>}<a name="line.151"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre>
+</div>
+</body>
+</html>

@@ -1,0 +1,405 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+<title>Source code</title>
+<link rel="stylesheet" type="text/css" href="../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<div class="sourceContainer">
+<pre><span class="sourceLineNo">001</span>/*<a name="line.1"></a>
+<span class="sourceLineNo">002</span> * This is free and unencumbered software released into the public domain.<a name="line.2"></a>
+<span class="sourceLineNo">003</span> *<a name="line.3"></a>
+<span class="sourceLineNo">004</span> * Please see https://github.com/binkley/binkley/blob/master/LICENSE.md.<a name="line.4"></a>
+<span class="sourceLineNo">005</span> */<a name="line.5"></a>
+<span class="sourceLineNo">006</span><a name="line.6"></a>
+<span class="sourceLineNo">007</span>package hm.binkley.util;<a name="line.7"></a>
+<span class="sourceLineNo">008</span><a name="line.8"></a>
+<span class="sourceLineNo">009</span>import hm.binkley.util.XPropsConverter.Conversion;<a name="line.9"></a>
+<span class="sourceLineNo">010</span>import lombok.NonNull;<a name="line.10"></a>
+<span class="sourceLineNo">011</span>import org.apache.commons.lang3.text.StrLookup;<a name="line.11"></a>
+<span class="sourceLineNo">012</span>import org.apache.commons.lang3.text.StrSubstitutor;<a name="line.12"></a>
+<span class="sourceLineNo">013</span>import org.springframework.core.io.Resource;<a name="line.13"></a>
+<span class="sourceLineNo">014</span>import org.springframework.core.io.support.PathMatchingResourcePatternResolver;<a name="line.14"></a>
+<span class="sourceLineNo">015</span>import org.springframework.core.io.support.ResourcePatternResolver;<a name="line.15"></a>
+<span class="sourceLineNo">016</span><a name="line.16"></a>
+<span class="sourceLineNo">017</span>import javax.annotation.Nonnull;<a name="line.17"></a>
+<span class="sourceLineNo">018</span>import javax.annotation.Nullable;<a name="line.18"></a>
+<span class="sourceLineNo">019</span>import java.io.BufferedReader;<a name="line.19"></a>
+<span class="sourceLineNo">020</span>import java.io.CharArrayReader;<a name="line.20"></a>
+<span class="sourceLineNo">021</span>import java.io.CharArrayWriter;<a name="line.21"></a>
+<span class="sourceLineNo">022</span>import java.io.IOException;<a name="line.22"></a>
+<span class="sourceLineNo">023</span>import java.io.InputStream;<a name="line.23"></a>
+<span class="sourceLineNo">024</span>import java.io.InputStreamReader;<a name="line.24"></a>
+<span class="sourceLineNo">025</span>import java.io.Reader;<a name="line.25"></a>
+<span class="sourceLineNo">026</span>import java.net.URI;<a name="line.26"></a>
+<span class="sourceLineNo">027</span>import java.nio.charset.Charset;<a name="line.27"></a>
+<span class="sourceLineNo">028</span>import java.util.ArrayList;<a name="line.28"></a>
+<span class="sourceLineNo">029</span>import java.util.Collection;<a name="line.29"></a>
+<span class="sourceLineNo">030</span>import java.util.LinkedHashSet;<a name="line.30"></a>
+<span class="sourceLineNo">031</span>import java.util.Map;<a name="line.31"></a>
+<span class="sourceLineNo">032</span>import java.util.Set;<a name="line.32"></a>
+<span class="sourceLineNo">033</span>import java.util.concurrent.ConcurrentHashMap;<a name="line.33"></a>
+<span class="sourceLineNo">034</span>import java.util.function.Function;<a name="line.34"></a>
+<span class="sourceLineNo">035</span>import java.util.regex.Matcher;<a name="line.35"></a>
+<span class="sourceLineNo">036</span>import java.util.regex.Pattern;<a name="line.36"></a>
+<span class="sourceLineNo">037</span><a name="line.37"></a>
+<span class="sourceLineNo">038</span>import static java.lang.String.format;<a name="line.38"></a>
+<span class="sourceLineNo">039</span>import static java.util.Arrays.asList;<a name="line.39"></a>
+<span class="sourceLineNo">040</span>import static java.util.regex.Pattern.compile;<a name="line.40"></a>
+<span class="sourceLineNo">041</span><a name="line.41"></a>
+<span class="sourceLineNo">042</span>/**<a name="line.42"></a>
+<span class="sourceLineNo">043</span> * {@code XProperties} is a {@code java.util.Properties} supporting inclusion of other properties<a name="line.43"></a>
+<span class="sourceLineNo">044</span> * files, parameter substition and typed return values.  Key order is preserved; keys from included<a name="line.44"></a>
+<span class="sourceLineNo">045</span> * properties are prior to those from the current properties.<a name="line.45"></a>
+<span class="sourceLineNo">046</span> * &lt;p&gt;<a name="line.46"></a>
+<span class="sourceLineNo">047</span> * Keys are restricted to {@code String}s.<a name="line.47"></a>
+<span class="sourceLineNo">048</span> * &lt;p&gt;<a name="line.48"></a>
+<span class="sourceLineNo">049</span> * Loading processes lines of the form: &lt;pre&gt;<a name="line.49"></a>
+<span class="sourceLineNo">050</span> * #include &lt;var&gt;Spring style resource path&lt;/var&gt;&lt;/pre&gt; for inclusion.  Looks up &lt;var&gt;resource<a name="line.50"></a>
+<span class="sourceLineNo">051</span> * path&lt;/var&gt; with a {@link ResourcePatternResolver}; loading found resources in turn. Similarly<a name="line.51"></a>
+<span class="sourceLineNo">052</span> * processes resource recursively for further inclusion.  Includes multiple resources separated by<a name="line.52"></a>
+<span class="sourceLineNo">053</span> * comma (",") in the same "#include" statement.<a name="line.53"></a>
+<span class="sourceLineNo">054</span> * &lt;p&gt;<a name="line.54"></a>
+<span class="sourceLineNo">055</span> * Substitutes in resource paths of the<a name="line.55"></a>
+<span class="sourceLineNo">056</span> * form: &lt;pre&gt;<a name="line.56"></a>
+<span class="sourceLineNo">057</span> * #include ${&lt;var&gt;variable&lt;/var&gt;}&lt;/pre&gt; or portions thereof.  Looks up &lt;var&gt;variable&lt;/var&gt; in<a name="line.57"></a>
+<span class="sourceLineNo">058</span> * the current properties, and if not found, in the system properties.  If found, replaces the text<a name="line.58"></a>
+<span class="sourceLineNo">059</span> * with the variable value, including "${" and trailing "}".<a name="line.59"></a>
+<span class="sourceLineNo">060</span> * &lt;p&gt;<a name="line.60"></a>
+<span class="sourceLineNo">061</span> * Use forward slashes ("/") only for path separators; &lt;strong&gt;do not&lt;/strong&gt; use back slashes<a name="line.61"></a>
+<span class="sourceLineNo">062</span> * ("\").<a name="line.62"></a>
+<span class="sourceLineNo">063</span> * &lt;p&gt;<a name="line.63"></a>
+<span class="sourceLineNo">064</span> * Examples: &lt;table&gt;&lt;tr&gt;&lt;th&gt;Text&lt;/th&gt; &lt;th&gt;Result&lt;/th&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;{@code #include<a name="line.64"></a>
+<span class="sourceLineNo">065</span> * foo/file.properties}&lt;/td&gt; &lt;td&gt;Includes {@code foo.properties} found in the classpath&lt;/td&gt;&lt;/tr&gt;<a name="line.65"></a>
+<span class="sourceLineNo">066</span> * &lt;tr&gt;&lt;td&gt;{@code #include foo.properties, bar.properties}&lt;/td&gt; &lt;td&gt;Includes both {@code<a name="line.66"></a>
+<span class="sourceLineNo">067</span> * foo.properties} and {@code bar.properties}&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;{@code #include<a name="line.67"></a>
+<span class="sourceLineNo">068</span> * file:/var/tmp/${user.name }/foo.properties}&lt;/td&gt; &lt;td&gt;Includes {@code foo.properties} found in a<a name="line.68"></a>
+<span class="sourceLineNo">069</span> * directory named after the current user&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;{@code #include<a name="line.69"></a>
+<span class="sourceLineNo">070</span> * classpath*:**&amp;#47;foo.properties}&lt;/td&gt; &lt;td&gt;Includes all {@code foo.properties}&lt;/tr&gt; files found<a name="line.70"></a>
+<span class="sourceLineNo">071</span> * subdirectories of the classpath&lt;/td&gt;&lt;/tr&gt; &lt;/table&gt;<a name="line.71"></a>
+<span class="sourceLineNo">072</span> *<a name="line.72"></a>
+<span class="sourceLineNo">073</span> * @todo Implement defaults<a name="line.73"></a>
+<span class="sourceLineNo">074</span> * @todo Converter assumes cacheable keys; is this correct?<a name="line.74"></a>
+<span class="sourceLineNo">075</span> * @see PathMatchingResourcePatternResolver<a name="line.75"></a>
+<span class="sourceLineNo">076</span> * @see StrSubstitutor<a name="line.76"></a>
+<span class="sourceLineNo">077</span> * @see XPropsConverter<a name="line.77"></a>
+<span class="sourceLineNo">078</span> * @see #load(Reader) loading properties with inclusions<a name="line.78"></a>
+<span class="sourceLineNo">079</span> * @see #load(InputStream) loading properties with inclusions<a name="line.79"></a>
+<span class="sourceLineNo">080</span> * @see #getProperty(String) getting properties with substitution<a name="line.80"></a>
+<span class="sourceLineNo">081</span> */<a name="line.81"></a>
+<span class="sourceLineNo">082</span>public class XProperties<a name="line.82"></a>
+<span class="sourceLineNo">083</span>        extends OrderedProperties {<a name="line.83"></a>
+<span class="sourceLineNo">084</span>    private static final Pattern include = compile("^#include\\s+(.*)\\s*$");<a name="line.84"></a>
+<span class="sourceLineNo">085</span>    private static final Pattern comma = compile("\\s*,\\s*");<a name="line.85"></a>
+<span class="sourceLineNo">086</span>    private static final Pattern colon = compile(":");<a name="line.86"></a>
+<span class="sourceLineNo">087</span><a name="line.87"></a>
+<span class="sourceLineNo">088</span>    private final Set&lt;URI&gt; included = new LinkedHashSet&lt;&gt;();<a name="line.88"></a>
+<span class="sourceLineNo">089</span>    private final XPropsConverter converter = new XPropsConverter();<a name="line.89"></a>
+<span class="sourceLineNo">090</span>    private final Map&lt;Key, Object&gt; converted = new ConcurrentHashMap&lt;&gt;();<a name="line.90"></a>
+<span class="sourceLineNo">091</span><a name="line.91"></a>
+<span class="sourceLineNo">092</span>    private final StrSubstitutor substitutor = new StrSubstitutor(new FindValue());<a name="line.92"></a>
+<span class="sourceLineNo">093</span><a name="line.93"></a>
+<span class="sourceLineNo">094</span>    {<a name="line.94"></a>
+<span class="sourceLineNo">095</span>        substitutor.setEnableSubstitutionInVariables(true);<a name="line.95"></a>
+<span class="sourceLineNo">096</span>    }<a name="line.96"></a>
+<span class="sourceLineNo">097</span><a name="line.97"></a>
+<span class="sourceLineNo">098</span>    /**<a name="line.98"></a>
+<span class="sourceLineNo">099</span>     * Creates a new {@code XProperties} for the given &lt;var&gt;absolutePath&lt;/var&gt; found in the<a name="line.99"></a>
+<span class="sourceLineNo">100</span>     * classpath.<a name="line.100"></a>
+<span class="sourceLineNo">101</span>     *<a name="line.101"></a>
+<span class="sourceLineNo">102</span>     * @param absolutePath the absolute path to search on the classpath, never missing<a name="line.102"></a>
+<span class="sourceLineNo">103</span>     *<a name="line.103"></a>
+<span class="sourceLineNo">104</span>     * @throws IOException if &lt;var&gt;absolutePath&lt;/var&gt; cannot be loaded<a name="line.104"></a>
+<span class="sourceLineNo">105</span>     */<a name="line.105"></a>
+<span class="sourceLineNo">106</span>    @Nonnull<a name="line.106"></a>
+<span class="sourceLineNo">107</span>    public static XProperties from(@Nonnull @NonNull final String absolutePath)<a name="line.107"></a>
+<span class="sourceLineNo">108</span>            throws IOException {<a name="line.108"></a>
+<span class="sourceLineNo">109</span>        final Resource resource = new PathMatchingResourcePatternResolver()<a name="line.109"></a>
+<span class="sourceLineNo">110</span>                .getResource(absolutePath);<a name="line.110"></a>
+<span class="sourceLineNo">111</span>        try (final InputStream in = resource.getInputStream()) {<a name="line.111"></a>
+<span class="sourceLineNo">112</span>            final XProperties xprops = new XProperties();<a name="line.112"></a>
+<span class="sourceLineNo">113</span>            xprops.included.add(resource.getURI());<a name="line.113"></a>
+<span class="sourceLineNo">114</span>            xprops.load(in);<a name="line.114"></a>
+<span class="sourceLineNo">115</span>            return xprops;<a name="line.115"></a>
+<span class="sourceLineNo">116</span>        }<a name="line.116"></a>
+<span class="sourceLineNo">117</span>    }<a name="line.117"></a>
+<span class="sourceLineNo">118</span><a name="line.118"></a>
+<span class="sourceLineNo">119</span>    /** @todo Documentation */<a name="line.119"></a>
+<span class="sourceLineNo">120</span>    public XProperties() {<a name="line.120"></a>
+<span class="sourceLineNo">121</span>    }<a name="line.121"></a>
+<span class="sourceLineNo">122</span><a name="line.122"></a>
+<span class="sourceLineNo">123</span>    /** @todo Documentation */<a name="line.123"></a>
+<span class="sourceLineNo">124</span>    public XProperties(@Nonnull final Map&lt;String, String&gt; initial) {<a name="line.124"></a>
+<span class="sourceLineNo">125</span>        putAll(initial);<a name="line.125"></a>
+<span class="sourceLineNo">126</span>    }<a name="line.126"></a>
+<span class="sourceLineNo">127</span><a name="line.127"></a>
+<span class="sourceLineNo">128</span>    /**<a name="line.128"></a>
+<span class="sourceLineNo">129</span>     * @param prefix the alias prefix, never missing<a name="line.129"></a>
+<span class="sourceLineNo">130</span>     * @param factory the factory, never missing<a name="line.130"></a>
+<span class="sourceLineNo">131</span>     *<a name="line.131"></a>
+<span class="sourceLineNo">132</span>     * @todo Documentation<a name="line.132"></a>
+<span class="sourceLineNo">133</span>     * @see XPropsConverter#register(String, Conversion)<a name="line.133"></a>
+<span class="sourceLineNo">134</span>     */<a name="line.134"></a>
+<span class="sourceLineNo">135</span>    public void register(@Nonnull final String prefix,<a name="line.135"></a>
+<span class="sourceLineNo">136</span>            @Nonnull final Conversion&lt;?, ? extends Exception&gt; factory) {<a name="line.136"></a>
+<span class="sourceLineNo">137</span>        converter.register(prefix, factory);<a name="line.137"></a>
+<span class="sourceLineNo">138</span>    }<a name="line.138"></a>
+<span class="sourceLineNo">139</span><a name="line.139"></a>
+<span class="sourceLineNo">140</span>    /**<a name="line.140"></a>
+<span class="sourceLineNo">141</span>     * Note {@code XProperties} description for additional features over plain properties loading.<a name="line.141"></a>
+<span class="sourceLineNo">142</span>     * {@inheritDoc}<a name="line.142"></a>
+<span class="sourceLineNo">143</span>     *<a name="line.143"></a>
+<span class="sourceLineNo">144</span>     * @throws IOException if the properties cannot be loaded or if included resources cannot be<a name="line.144"></a>
+<span class="sourceLineNo">145</span>     * read<a name="line.145"></a>
+<span class="sourceLineNo">146</span>     */<a name="line.146"></a>
+<span class="sourceLineNo">147</span>    @Override<a name="line.147"></a>
+<span class="sourceLineNo">148</span>    public synchronized void load(@Nonnull final Reader reader)<a name="line.148"></a>
+<span class="sourceLineNo">149</span>            throws IOException {<a name="line.149"></a>
+<span class="sourceLineNo">150</span>        final ResourcePatternResolver loader = new PathMatchingResourcePatternResolver();<a name="line.150"></a>
+<span class="sourceLineNo">151</span>        try (final CharArrayWriter writer = new CharArrayWriter()) {<a name="line.151"></a>
+<span class="sourceLineNo">152</span>            try (final BufferedReader lines = new BufferedReader(reader)) {<a name="line.152"></a>
+<span class="sourceLineNo">153</span>                for (String line = lines.readLine(); null != line; line = lines.readLine()) {<a name="line.153"></a>
+<span class="sourceLineNo">154</span>                    writer.append(line).append('\n');<a name="line.154"></a>
+<span class="sourceLineNo">155</span>                    final Matcher matcher = include.matcher(line);<a name="line.155"></a>
+<span class="sourceLineNo">156</span>                    if (matcher.matches())<a name="line.156"></a>
+<span class="sourceLineNo">157</span>                        for (final String x : comma.split(substitutor.replace(matcher.group(1))))<a name="line.157"></a>
+<span class="sourceLineNo">158</span>                            for (final Resource resource : loader.getResources(x)) {<a name="line.158"></a>
+<span class="sourceLineNo">159</span>                                final URI uri = resource.getURI();<a name="line.159"></a>
+<span class="sourceLineNo">160</span>                                if (!included.add(uri))<a name="line.160"></a>
+<span class="sourceLineNo">161</span>                                    throw new RecursiveIncludeException(uri, included);<a name="line.161"></a>
+<span class="sourceLineNo">162</span>                                try (final InputStream in = resource.getInputStream()) {<a name="line.162"></a>
+<span class="sourceLineNo">163</span>                                    load(in);<a name="line.163"></a>
+<span class="sourceLineNo">164</span>                                }<a name="line.164"></a>
+<span class="sourceLineNo">165</span>                            }<a name="line.165"></a>
+<span class="sourceLineNo">166</span>                }<a name="line.166"></a>
+<span class="sourceLineNo">167</span>            }<a name="line.167"></a>
+<span class="sourceLineNo">168</span><a name="line.168"></a>
+<span class="sourceLineNo">169</span>            super.load(new CharArrayReader(writer.toCharArray()));<a name="line.169"></a>
+<span class="sourceLineNo">170</span>        }<a name="line.170"></a>
+<span class="sourceLineNo">171</span>        included.clear();<a name="line.171"></a>
+<span class="sourceLineNo">172</span>    }<a name="line.172"></a>
+<span class="sourceLineNo">173</span><a name="line.173"></a>
+<span class="sourceLineNo">174</span>    /**<a name="line.174"></a>
+<span class="sourceLineNo">175</span>     * Note {@code XProperties} description for additional features over plain properties loading.<a name="line.175"></a>
+<span class="sourceLineNo">176</span>     * {@inheritDoc}<a name="line.176"></a>
+<span class="sourceLineNo">177</span>     *<a name="line.177"></a>
+<span class="sourceLineNo">178</span>     * @throws IOException if the properties cannot be loaded or if included resources cannot be<a name="line.178"></a>
+<span class="sourceLineNo">179</span>     * read<a name="line.179"></a>
+<span class="sourceLineNo">180</span>     */<a name="line.180"></a>
+<span class="sourceLineNo">181</span>    @Override<a name="line.181"></a>
+<span class="sourceLineNo">182</span>    public synchronized void load(final InputStream inStream)<a name="line.182"></a>
+<span class="sourceLineNo">183</span>            throws IOException {<a name="line.183"></a>
+<span class="sourceLineNo">184</span>        load(new InputStreamReader(inStream, Charset.forName("UTF-8")));<a name="line.184"></a>
+<span class="sourceLineNo">185</span>    }<a name="line.185"></a>
+<span class="sourceLineNo">186</span><a name="line.186"></a>
+<span class="sourceLineNo">187</span>    /**<a name="line.187"></a>
+<span class="sourceLineNo">188</span>     * {@inheritDoc} &lt;p/&gt;<a name="line.188"></a>
+<span class="sourceLineNo">189</span>     * Substitutes in property values sequences of the form: &lt;pre&gt;<a name="line.189"></a>
+<span class="sourceLineNo">190</span>     * ${&lt;var&gt;variable&lt;/var&gt;}&lt;/pre&gt;.  Looks up &lt;var&gt;variable&lt;/var&gt; in the current properties, and<a name="line.190"></a>
+<span class="sourceLineNo">191</span>     * if not found, in the system properties.  If found, replaces the text with the variable value,<a name="line.191"></a>
+<span class="sourceLineNo">192</span>     * including "${" and trailing "}".<a name="line.192"></a>
+<span class="sourceLineNo">193</span>     *<a name="line.193"></a>
+<span class="sourceLineNo">194</span>     * @throws MissingPropertyException if substitution refers to a missing property<a name="line.194"></a>
+<span class="sourceLineNo">195</span>     * @see StrSubstitutor<a name="line.195"></a>
+<span class="sourceLineNo">196</span>     */<a name="line.196"></a>
+<span class="sourceLineNo">197</span>    @Nullable<a name="line.197"></a>
+<span class="sourceLineNo">198</span>    @Override<a name="line.198"></a>
+<span class="sourceLineNo">199</span>    public String getProperty(final String key) {<a name="line.199"></a>
+<span class="sourceLineNo">200</span>        final String value = super.getProperty(key);<a name="line.200"></a>
+<span class="sourceLineNo">201</span>        if (null == value)<a name="line.201"></a>
+<span class="sourceLineNo">202</span>            return null;<a name="line.202"></a>
+<span class="sourceLineNo">203</span>        return substitutor.replace(value);<a name="line.203"></a>
+<span class="sourceLineNo">204</span>    }<a name="line.204"></a>
+<span class="sourceLineNo">205</span><a name="line.205"></a>
+<span class="sourceLineNo">206</span>    /**<a name="line.206"></a>
+<span class="sourceLineNo">207</span>     * {@inheritDoc} &lt;p/&gt;<a name="line.207"></a>
+<span class="sourceLineNo">208</span>     * Substitutes in string values sequences of the form: &lt;pre&gt;<a name="line.208"></a>
+<span class="sourceLineNo">209</span>     * ${&lt;var&gt;variable&lt;/var&gt;}&lt;/pre&gt; for substition.  Looks up &lt;var&gt;variable&lt;/var&gt; in the current<a name="line.209"></a>
+<span class="sourceLineNo">210</span>     * properties, and if not found, in the system properties.  If found, replaces the text with the<a name="line.210"></a>
+<span class="sourceLineNo">211</span>     * variable value, including "${" and trailing "}".<a name="line.211"></a>
+<span class="sourceLineNo">212</span>     *<a name="line.212"></a>
+<span class="sourceLineNo">213</span>     * @see StrSubstitutor<a name="line.213"></a>
+<span class="sourceLineNo">214</span>     */<a name="line.214"></a>
+<span class="sourceLineNo">215</span>    @Nullable<a name="line.215"></a>
+<span class="sourceLineNo">216</span>    @Override<a name="line.216"></a>
+<span class="sourceLineNo">217</span>    public synchronized Object get(final Object key) {<a name="line.217"></a>
+<span class="sourceLineNo">218</span>        final Object value = super.get(key);<a name="line.218"></a>
+<span class="sourceLineNo">219</span>        if (null == value || !(value instanceof String))<a name="line.219"></a>
+<span class="sourceLineNo">220</span>            return value;<a name="line.220"></a>
+<span class="sourceLineNo">221</span>        return substitutor.replace((String) value);<a name="line.221"></a>
+<span class="sourceLineNo">222</span>    }<a name="line.222"></a>
+<span class="sourceLineNo">223</span><a name="line.223"></a>
+<span class="sourceLineNo">224</span>    /**<a name="line.224"></a>
+<span class="sourceLineNo">225</span>     * Gets a typed property value.  &lt;strong&gt;Responsibility is the caller's&lt;/strong&gt; to assign the<a name="line.225"></a>
+<span class="sourceLineNo">226</span>     * return to a correct type; failure to do so will cause a {@code ClassCastException} at<a name="line.226"></a>
+<span class="sourceLineNo">227</span>     * run-time.<a name="line.227"></a>
+<span class="sourceLineNo">228</span>     * &lt;p&gt;<a name="line.228"></a>
+<span class="sourceLineNo">229</span>     * Typed keys are of the form: {@code &lt;var&gt;type&lt;/var&gt;:&lt;var&gt;key&lt;/var&gt;}.  The &lt;var&gt;key&lt;/var&gt; is<a name="line.229"></a>
+<span class="sourceLineNo">230</span>     * the same key as {@link System#getProperty(String) System.getProperty}.  See {@link<a name="line.230"></a>
+<span class="sourceLineNo">231</span>     * XPropsConverter#register(String, Conversion) register} for built-in &lt;var&gt;type&lt;/var&gt; key<a name="line.231"></a>
+<span class="sourceLineNo">232</span>     * prefixes.<a name="line.232"></a>
+<span class="sourceLineNo">233</span>     * &lt;p&gt;<a name="line.233"></a>
+<span class="sourceLineNo">234</span>     * Examples: &lt;table&gt;&lt;tr&gt;&lt;th&gt;Code&lt;/th&gt; &lt;th&gt;Comment&lt;/th&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;{@code Integer foo =<a name="line.234"></a>
+<span class="sourceLineNo">235</span>     * xprops.getObject("int:foo");}&lt;/td&gt; &lt;td&gt;Gets the "foo" property as an possibly {@code null}<a name="line.235"></a>
+<span class="sourceLineNo">236</span>     * integer&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;{@code int foo = xprops.getObject("int:foo");}&lt;/td&gt; &lt;td&gt;Gets the<a name="line.236"></a>
+<span class="sourceLineNo">237</span>     * "foo" property as a primitive integer, throwing {@code NullPointerException} if<a name="line.237"></a>
+<span class="sourceLineNo">238</span>     * missing&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;{@code Long foo = xprops.getObject("long:foo");}&lt;/td&gt; &lt;td&gt;Gets the<a name="line.238"></a>
+<span class="sourceLineNo">239</span>     * "foo" property as an possibly {@code null} long; this is the same property as the previous<a name="line.239"></a>
+<span class="sourceLineNo">240</span>     * examples&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;<a name="line.240"></a>
+<span class="sourceLineNo">241</span>     *<a name="line.241"></a>
+<span class="sourceLineNo">242</span>     * @param key the type-prefixed key, never missing<a name="line.242"></a>
+<span class="sourceLineNo">243</span>     * @param &lt;T&gt; the value type<a name="line.243"></a>
+<span class="sourceLineNo">244</span>     *<a name="line.244"></a>
+<span class="sourceLineNo">245</span>     * @return the type property value, possibly missing<a name="line.245"></a>
+<span class="sourceLineNo">246</span>     *<a name="line.246"></a>
+<span class="sourceLineNo">247</span>     * @see #getObjectOrDefault(String, Object)<a name="line.247"></a>
+<span class="sourceLineNo">248</span>     * @see XPropsConverter#register(String, Conversion)<a name="line.248"></a>
+<span class="sourceLineNo">249</span>     */<a name="line.249"></a>
+<span class="sourceLineNo">250</span>    @Nullable<a name="line.250"></a>
+<span class="sourceLineNo">251</span>    public &lt;T&gt; T getObject(@Nonnull final String key) {<a name="line.251"></a>
+<span class="sourceLineNo">252</span>        return getObjectOrDefault(key, null);<a name="line.252"></a>
+<span class="sourceLineNo">253</span>    }<a name="line.253"></a>
+<span class="sourceLineNo">254</span><a name="line.254"></a>
+<span class="sourceLineNo">255</span>    /** @todo Javadoc */<a name="line.255"></a>
+<span class="sourceLineNo">256</span>    @Nullable<a name="line.256"></a>
+<span class="sourceLineNo">257</span>    @SuppressWarnings("unchecked")<a name="line.257"></a>
+<span class="sourceLineNo">258</span>    public &lt;T&gt; T getObjectOrDefault(@Nonnull final String key, final T defaultValue) {<a name="line.258"></a>
+<span class="sourceLineNo">259</span>        return (T) converted.computeIfAbsent(new Key(key, defaultValue), this::convert);<a name="line.259"></a>
+<span class="sourceLineNo">260</span>    }<a name="line.260"></a>
+<span class="sourceLineNo">261</span><a name="line.261"></a>
+<span class="sourceLineNo">262</span>    private Object convert(final Key key) {<a name="line.262"></a>
+<span class="sourceLineNo">263</span>        final String property = key.property;<a name="line.263"></a>
+<span class="sourceLineNo">264</span>        final String wholeValue = getProperty(property);<a name="line.264"></a>
+<span class="sourceLineNo">265</span>        if (null != wholeValue)<a name="line.265"></a>
+<span class="sourceLineNo">266</span>            return wholeValue; // Literal key match wins - assume T==String<a name="line.266"></a>
+<span class="sourceLineNo">267</span>        final String[] parts = colon.split(property, 2);<a name="line.267"></a>
+<span class="sourceLineNo">268</span>        final String value = getProperty(parts[1]);<a name="line.268"></a>
+<span class="sourceLineNo">269</span>        if (null == value)<a name="line.269"></a>
+<span class="sourceLineNo">270</span>            return key.fallback;<a name="line.270"></a>
+<span class="sourceLineNo">271</span>        try {<a name="line.271"></a>
+<span class="sourceLineNo">272</span>            return converter.convert(parts[0], value);<a name="line.272"></a>
+<span class="sourceLineNo">273</span>        } catch (final Exception e) {<a name="line.273"></a>
+<span class="sourceLineNo">274</span>            final String[] x = colon.split(property, 2);<a name="line.274"></a>
+<span class="sourceLineNo">275</span>            throw new FailedConversionException(property, getProperty(x[1]), e.getCause());<a name="line.275"></a>
+<span class="sourceLineNo">276</span>        }<a name="line.276"></a>
+<span class="sourceLineNo">277</span>    }<a name="line.277"></a>
+<span class="sourceLineNo">278</span><a name="line.278"></a>
+<span class="sourceLineNo">279</span>    private final class FindValue<a name="line.279"></a>
+<span class="sourceLineNo">280</span>            extends StrLookup {<a name="line.280"></a>
+<span class="sourceLineNo">281</span>        @Override<a name="line.281"></a>
+<span class="sourceLineNo">282</span>        public String lookup(final String key) {<a name="line.282"></a>
+<span class="sourceLineNo">283</span>            return asList((Function&lt;String, String&gt;) XProperties.this::getProperty,<a name="line.283"></a>
+<span class="sourceLineNo">284</span>                    System::getProperty, System::getenv).stream().<a name="line.284"></a>
+<span class="sourceLineNo">285</span>                    map(f -&gt; f.apply(key)).<a name="line.285"></a>
+<span class="sourceLineNo">286</span>                    filter(v -&gt; null != v).<a name="line.286"></a>
+<span class="sourceLineNo">287</span>                    findFirst().<a name="line.287"></a>
+<span class="sourceLineNo">288</span>                    orElseThrow(() -&gt; new MissingPropertyException(key));<a name="line.288"></a>
+<span class="sourceLineNo">289</span>        }<a name="line.289"></a>
+<span class="sourceLineNo">290</span>    }<a name="line.290"></a>
+<span class="sourceLineNo">291</span><a name="line.291"></a>
+<span class="sourceLineNo">292</span>    /** @todo Documentation */<a name="line.292"></a>
+<span class="sourceLineNo">293</span>    public static final class RecursiveIncludeException<a name="line.293"></a>
+<span class="sourceLineNo">294</span>            extends RuntimeException {<a name="line.294"></a>
+<span class="sourceLineNo">295</span>        public RecursiveIncludeException(final URI duplicate, final Collection&lt;URI&gt; included) {<a name="line.295"></a>
+<span class="sourceLineNo">296</span>            super(message(duplicate, included));<a name="line.296"></a>
+<span class="sourceLineNo">297</span>        }<a name="line.297"></a>
+<span class="sourceLineNo">298</span><a name="line.298"></a>
+<span class="sourceLineNo">299</span>        private static String message(final URI duplicate, final Collection&lt;URI&gt; included) {<a name="line.299"></a>
+<span class="sourceLineNo">300</span>            final ArrayList&lt;URI&gt; x = new ArrayList&lt;&gt;(included.size() + 1);<a name="line.300"></a>
+<span class="sourceLineNo">301</span>            x.addAll(included);<a name="line.301"></a>
+<span class="sourceLineNo">302</span>            x.add(duplicate);<a name="line.302"></a>
+<span class="sourceLineNo">303</span>            return x.toString();<a name="line.303"></a>
+<span class="sourceLineNo">304</span>        }<a name="line.304"></a>
+<span class="sourceLineNo">305</span>    }<a name="line.305"></a>
+<span class="sourceLineNo">306</span><a name="line.306"></a>
+<span class="sourceLineNo">307</span>    /** @todo Documentation */<a name="line.307"></a>
+<span class="sourceLineNo">308</span>    public static final class FailedConversionException<a name="line.308"></a>
+<span class="sourceLineNo">309</span>            extends RuntimeException {<a name="line.309"></a>
+<span class="sourceLineNo">310</span>        public FailedConversionException(final String key, final String value,<a name="line.310"></a>
+<span class="sourceLineNo">311</span>                final Throwable cause) {<a name="line.311"></a>
+<span class="sourceLineNo">312</span>            super(format("%s = %s", key, value), cause);<a name="line.312"></a>
+<span class="sourceLineNo">313</span>        }<a name="line.313"></a>
+<span class="sourceLineNo">314</span>    }<a name="line.314"></a>
+<span class="sourceLineNo">315</span><a name="line.315"></a>
+<span class="sourceLineNo">316</span>    /** @todo Documentation */<a name="line.316"></a>
+<span class="sourceLineNo">317</span>    public static class MissingPropertyException<a name="line.317"></a>
+<span class="sourceLineNo">318</span>            extends IllegalArgumentException {<a name="line.318"></a>
+<span class="sourceLineNo">319</span>        public MissingPropertyException(final String key) {<a name="line.319"></a>
+<span class="sourceLineNo">320</span>            super(key);<a name="line.320"></a>
+<span class="sourceLineNo">321</span>        }<a name="line.321"></a>
+<span class="sourceLineNo">322</span>    }<a name="line.322"></a>
+<span class="sourceLineNo">323</span><a name="line.323"></a>
+<span class="sourceLineNo">324</span>    private static final class Key {<a name="line.324"></a>
+<span class="sourceLineNo">325</span>        private final String property;<a name="line.325"></a>
+<span class="sourceLineNo">326</span>        private final Object fallback;<a name="line.326"></a>
+<span class="sourceLineNo">327</span><a name="line.327"></a>
+<span class="sourceLineNo">328</span>        private Key(final String property, final Object fallback) {<a name="line.328"></a>
+<span class="sourceLineNo">329</span>            this.property = property;<a name="line.329"></a>
+<span class="sourceLineNo">330</span>            this.fallback = fallback;<a name="line.330"></a>
+<span class="sourceLineNo">331</span>        }<a name="line.331"></a>
+<span class="sourceLineNo">332</span>    }<a name="line.332"></a>
+<span class="sourceLineNo">333</span>}<a name="line.333"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre>
+</div>
+</body>
+</html>

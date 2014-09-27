@@ -1,0 +1,361 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+<title>Source code</title>
+<link rel="stylesheet" type="text/css" href="../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<div class="sourceContainer">
+<pre><span class="sourceLineNo">001</span>/*<a name="line.1"></a>
+<span class="sourceLineNo">002</span> * This is free and unencumbered software released into the public domain.<a name="line.2"></a>
+<span class="sourceLineNo">003</span> *<a name="line.3"></a>
+<span class="sourceLineNo">004</span> * Anyone is free to copy, modify, publish, use, compile, sell, or<a name="line.4"></a>
+<span class="sourceLineNo">005</span> * distribute this software, either in source code form or as a compiled<a name="line.5"></a>
+<span class="sourceLineNo">006</span> * binary, for any purpose, commercial or non-commercial, and by any<a name="line.6"></a>
+<span class="sourceLineNo">007</span> * means.<a name="line.7"></a>
+<span class="sourceLineNo">008</span> *<a name="line.8"></a>
+<span class="sourceLineNo">009</span> * In jurisdictions that recognize copyright laws, the author or authors<a name="line.9"></a>
+<span class="sourceLineNo">010</span> * of this software dedicate any and all copyright interest in the<a name="line.10"></a>
+<span class="sourceLineNo">011</span> * software to the public domain. We make this dedication for the benefit<a name="line.11"></a>
+<span class="sourceLineNo">012</span> * of the public at large and to the detriment of our heirs and<a name="line.12"></a>
+<span class="sourceLineNo">013</span> * successors. We intend this dedication to be an overt act of<a name="line.13"></a>
+<span class="sourceLineNo">014</span> * relinquishment in perpetuity of all present and future rights to this<a name="line.14"></a>
+<span class="sourceLineNo">015</span> * software under copyright law.<a name="line.15"></a>
+<span class="sourceLineNo">016</span> *<a name="line.16"></a>
+<span class="sourceLineNo">017</span> * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,<a name="line.17"></a>
+<span class="sourceLineNo">018</span> * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF<a name="line.18"></a>
+<span class="sourceLineNo">019</span> * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.<a name="line.19"></a>
+<span class="sourceLineNo">020</span> * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR<a name="line.20"></a>
+<span class="sourceLineNo">021</span> * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,<a name="line.21"></a>
+<span class="sourceLineNo">022</span> * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR<a name="line.22"></a>
+<span class="sourceLineNo">023</span> * OTHER DEALINGS IN THE SOFTWARE.<a name="line.23"></a>
+<span class="sourceLineNo">024</span> *<a name="line.24"></a>
+<span class="sourceLineNo">025</span> * For more information, please refer to &lt;http://unlicense.org/&gt;.<a name="line.25"></a>
+<span class="sourceLineNo">026</span> */<a name="line.26"></a>
+<span class="sourceLineNo">027</span><a name="line.27"></a>
+<span class="sourceLineNo">028</span>package hm.binkley.util;<a name="line.28"></a>
+<span class="sourceLineNo">029</span><a name="line.29"></a>
+<span class="sourceLineNo">030</span>import com.google.common.net.HostAndPort;<a name="line.30"></a>
+<span class="sourceLineNo">031</span>import org.springframework.core.io.DefaultResourceLoader;<a name="line.31"></a>
+<span class="sourceLineNo">032</span>import org.springframework.core.io.support.PathMatchingResourcePatternResolver;<a name="line.32"></a>
+<span class="sourceLineNo">033</span><a name="line.33"></a>
+<span class="sourceLineNo">034</span>import javax.annotation.Nonnull;<a name="line.34"></a>
+<span class="sourceLineNo">035</span>import java.io.File;<a name="line.35"></a>
+<span class="sourceLineNo">036</span>import java.lang.reflect.Constructor;<a name="line.36"></a>
+<span class="sourceLineNo">037</span>import java.lang.reflect.InvocationTargetException;<a name="line.37"></a>
+<span class="sourceLineNo">038</span>import java.lang.reflect.Method;<a name="line.38"></a>
+<span class="sourceLineNo">039</span>import java.math.BigDecimal;<a name="line.39"></a>
+<span class="sourceLineNo">040</span>import java.math.BigInteger;<a name="line.40"></a>
+<span class="sourceLineNo">041</span>import java.net.InetAddress;<a name="line.41"></a>
+<span class="sourceLineNo">042</span>import java.net.URI;<a name="line.42"></a>
+<span class="sourceLineNo">043</span>import java.net.URL;<a name="line.43"></a>
+<span class="sourceLineNo">044</span>import java.nio.file.Paths;<a name="line.44"></a>
+<span class="sourceLineNo">045</span>import java.time.Duration;<a name="line.45"></a>
+<span class="sourceLineNo">046</span>import java.time.Instant;<a name="line.46"></a>
+<span class="sourceLineNo">047</span>import java.time.LocalDate;<a name="line.47"></a>
+<span class="sourceLineNo">048</span>import java.time.LocalDateTime;<a name="line.48"></a>
+<span class="sourceLineNo">049</span>import java.time.Period;<a name="line.49"></a>
+<span class="sourceLineNo">050</span>import java.util.Map;<a name="line.50"></a>
+<span class="sourceLineNo">051</span>import java.util.ResourceBundle;<a name="line.51"></a>
+<span class="sourceLineNo">052</span>import java.util.TimeZone;<a name="line.52"></a>
+<span class="sourceLineNo">053</span>import java.util.concurrent.ConcurrentHashMap;<a name="line.53"></a>
+<span class="sourceLineNo">054</span>import java.util.regex.Pattern;<a name="line.54"></a>
+<span class="sourceLineNo">055</span><a name="line.55"></a>
+<span class="sourceLineNo">056</span>import static com.google.common.base.Throwables.getRootCause;<a name="line.56"></a>
+<span class="sourceLineNo">057</span>import static java.lang.Thread.currentThread;<a name="line.57"></a>
+<span class="sourceLineNo">058</span>import static java.net.InetSocketAddress.createUnresolved;<a name="line.58"></a>
+<span class="sourceLineNo">059</span>import static java.util.Arrays.asList;<a name="line.59"></a>
+<span class="sourceLineNo">060</span><a name="line.60"></a>
+<span class="sourceLineNo">061</span>/**<a name="line.61"></a>
+<span class="sourceLineNo">062</span> * {@code Converter} &lt;b&gt;needs documentation&lt;/b&gt;.<a name="line.62"></a>
+<span class="sourceLineNo">063</span> *<a name="line.63"></a>
+<span class="sourceLineNo">064</span> * @author &lt;a href="mailto:binkley@alumni.rice.edu"&gt;B. K. Oxley (binkley)&lt;/a&gt;<a name="line.64"></a>
+<span class="sourceLineNo">065</span> * @todo Needs documentation.<a name="line.65"></a>
+<span class="sourceLineNo">066</span> * @todo Replace with prefix-&gt;class mapping and use the other Converter<a name="line.66"></a>
+<span class="sourceLineNo">067</span> */<a name="line.67"></a>
+<span class="sourceLineNo">068</span>public final class XPropsConverter {<a name="line.68"></a>
+<span class="sourceLineNo">069</span>    private final Map&lt;String, Conversion&lt;?, ? extends Exception&gt;&gt; factories<a name="line.69"></a>
+<span class="sourceLineNo">070</span>            = new ConcurrentHashMap&lt;&gt;();<a name="line.70"></a>
+<span class="sourceLineNo">071</span><a name="line.71"></a>
+<span class="sourceLineNo">072</span>    public XPropsConverter() {<a name="line.72"></a>
+<span class="sourceLineNo">073</span>        register("address", value -&gt; {<a name="line.73"></a>
+<span class="sourceLineNo">074</span>            final HostAndPort parsed = HostAndPort.fromString(value).requireBracketsForIPv6();<a name="line.74"></a>
+<span class="sourceLineNo">075</span>            return createUnresolved(parsed.getHostText(), parsed.getPort());<a name="line.75"></a>
+<span class="sourceLineNo">076</span>        });<a name="line.76"></a>
+<span class="sourceLineNo">077</span>        register("bundle", ResourceBundle::getBundle);<a name="line.77"></a>
+<span class="sourceLineNo">078</span>        register("byte", Byte::valueOf);<a name="line.78"></a>
+<span class="sourceLineNo">079</span>        register("class", Class::forName);<a name="line.79"></a>
+<span class="sourceLineNo">080</span>        register("date", LocalDate::parse);<a name="line.80"></a>
+<span class="sourceLineNo">081</span>        register("decimal", BigDecimal::new);<a name="line.81"></a>
+<span class="sourceLineNo">082</span>        register("double", Double::valueOf);<a name="line.82"></a>
+<span class="sourceLineNo">083</span>        register("duration", Duration::parse);<a name="line.83"></a>
+<span class="sourceLineNo">084</span>        register("file", File::new);<a name="line.84"></a>
+<span class="sourceLineNo">085</span>        register("float", Float::valueOf);<a name="line.85"></a>
+<span class="sourceLineNo">086</span>        register("inet", InetAddress::getByName);<a name="line.86"></a>
+<span class="sourceLineNo">087</span>        register("int", Integer::valueOf);<a name="line.87"></a>
+<span class="sourceLineNo">088</span>        register("integer", BigInteger::new);<a name="line.88"></a>
+<span class="sourceLineNo">089</span>        register("long", Long::valueOf);<a name="line.89"></a>
+<span class="sourceLineNo">090</span>        register("path", Paths::get);<a name="line.90"></a>
+<span class="sourceLineNo">091</span>        register("period", Period::parse);<a name="line.91"></a>
+<span class="sourceLineNo">092</span>        register("regex", Pattern::compile);<a name="line.92"></a>
+<span class="sourceLineNo">093</span>        register("resource",<a name="line.93"></a>
+<span class="sourceLineNo">094</span>                value -&gt; new DefaultResourceLoader(currentThread().getContextClassLoader())<a name="line.94"></a>
+<span class="sourceLineNo">095</span>                        .getResource(value));<a name="line.95"></a>
+<span class="sourceLineNo">096</span>        register("resource*", value -&gt; asList(<a name="line.96"></a>
+<span class="sourceLineNo">097</span>                new PathMatchingResourcePatternResolver(currentThread().getContextClassLoader())<a name="line.97"></a>
+<span class="sourceLineNo">098</span>                        .getResources(value)));<a name="line.98"></a>
+<span class="sourceLineNo">099</span>        register("short", Short::valueOf);<a name="line.99"></a>
+<span class="sourceLineNo">100</span>        register("time", LocalDateTime::parse);<a name="line.100"></a>
+<span class="sourceLineNo">101</span>        register("timestamp", Instant::parse);<a name="line.101"></a>
+<span class="sourceLineNo">102</span>        register("tz", TimeZone::getTimeZone);<a name="line.102"></a>
+<span class="sourceLineNo">103</span>        register("uri", URI::create);<a name="line.103"></a>
+<span class="sourceLineNo">104</span>        register("url", URL::new);<a name="line.104"></a>
+<span class="sourceLineNo">105</span>    }<a name="line.105"></a>
+<span class="sourceLineNo">106</span><a name="line.106"></a>
+<span class="sourceLineNo">107</span>    /**<a name="line.107"></a>
+<span class="sourceLineNo">108</span>     * Registers a new alias mapping for converting property values to typed objects using the given<a name="line.108"></a>
+<span class="sourceLineNo">109</span>     * &lt;var&gt;prefix&lt;/var&gt; and &lt;var&gt;factory&lt;/var&gt;.<a name="line.109"></a>
+<span class="sourceLineNo">110</span>     * &lt;p&gt;<a name="line.110"></a>
+<span class="sourceLineNo">111</span>     * The &lt;var&gt;type&lt;/var&gt; prefix represents a Java or JDK type as listed here:<a name="line.111"></a>
+<span class="sourceLineNo">112</span>     * &lt;table&gt;&lt;tr&gt;&lt;th&gt;Prefix&lt;/th&gt; &lt;th&gt;Type&lt;/th&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;address&lt;/td&gt; &lt;td&gt;{@code<a name="line.112"></a>
+<span class="sourceLineNo">113</span>     * java.net.InetSocketAddress}&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;bundle&lt;/td&gt; &lt;td&gt;{@code<a name="line.113"></a>
+<span class="sourceLineNo">114</span>     * java.util.ResourceBundle}&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;byte&lt;/td&gt; &lt;td&gt;{@code java.lang.Byte}&lt;/td&gt;&lt;/tr&gt;<a name="line.114"></a>
+<span class="sourceLineNo">115</span>     * &lt;tr&gt;&lt;td&gt;class&lt;/td&gt; &lt;td&gt;java.lang.Class&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;date&lt;/td&gt; &lt;td&gt;{@code<a name="line.115"></a>
+<span class="sourceLineNo">116</span>     * java.time.LocalDate}&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;decimal&lt;/td&gt; &lt;td&gt;{@code java.math<a name="line.116"></a>
+<span class="sourceLineNo">117</span>     * .BigDecimal}&lt;/td&gt;&lt;/tr&gt;<a name="line.117"></a>
+<span class="sourceLineNo">118</span>     * &lt;tr&gt;&lt;td&gt;double&lt;/td&gt; &lt;td&gt;{@code java.lang.Double}&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;duration&lt;/td&gt; &lt;td&gt;{@code<a name="line.118"></a>
+<span class="sourceLineNo">119</span>     * java.time.Duration}&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;file&lt;/td&gt; &lt;td&gt;{@code java.io.File}&lt;/td&gt;&lt;/tr&gt;<a name="line.119"></a>
+<span class="sourceLineNo">120</span>     * &lt;tr&gt;&lt;td&gt;float&lt;/td&gt; &lt;td&gt;{@code java.lang.Float}&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;inet&lt;/td&gt; &lt;td&gt;{@code<a name="line.120"></a>
+<span class="sourceLineNo">121</span>     * java.net.InetAddress}&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;int&lt;/td&gt; &lt;td&gt;{@code java.lang.Integer}&lt;/td&gt;&lt;/tr&gt;<a name="line.121"></a>
+<span class="sourceLineNo">122</span>     * &lt;tr&gt;&lt;td&gt;integer&lt;/td&gt; &lt;td&gt;{@code java.math.BigInteger}&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;long&lt;/td&gt; &lt;td&gt;{@code<a name="line.122"></a>
+<span class="sourceLineNo">123</span>     * java.lang.Long}&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;path&lt;/td&gt; &lt;td&gt;{@code java.nio.file.Path}&lt;/td&gt;&lt;/tr&gt;<a name="line.123"></a>
+<span class="sourceLineNo">124</span>     * &lt;tr&gt;&lt;td&gt;period&lt;/td&gt; &lt;td&gt;{@code java.time.Period}&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;resource&lt;/td&gt;<a name="line.124"></a>
+<span class="sourceLineNo">125</span>     * &lt;tr&gt;&lt;td&gt;regex&lt;/td&gt; &lt;td&gt;{@code java.util.regex.Pattern}&lt;/td&gt;&lt;/tr&gt; &lt;td&gt;{@code<a name="line.125"></a>
+<span class="sourceLineNo">126</span>     * org.springframework.core.io.Resource}&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;resource*&lt;/td&gt; &lt;td&gt;{@code<a name="line.126"></a>
+<span class="sourceLineNo">127</span>     * java.util.List&amp;lt;org.springframework.core.io.Resource&amp;gt;}&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;short&lt;/td&gt;<a name="line.127"></a>
+<span class="sourceLineNo">128</span>     * &lt;td&gt;{@code java.lang.Short}&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;time&lt;/td&gt; &lt;td&gt;{@code<a name="line.128"></a>
+<span class="sourceLineNo">129</span>     * java.time.LocalDateTime}&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;timestamp&lt;/td&gt; &lt;td&gt;{@code<a name="line.129"></a>
+<span class="sourceLineNo">130</span>     * java.time.Instant}&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;tz&lt;/td&gt; &lt;td&gt;{@code java.util.TimeZone}&lt;/td&gt;&lt;/tr&gt;<a name="line.130"></a>
+<span class="sourceLineNo">131</span>     * &lt;tr&gt;&lt;td&gt;uri&lt;/td&gt; &lt;td&gt;{@code java.net.URI}&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td&gt;url&lt;/td&gt; &lt;td&gt;{@code<a name="line.131"></a>
+<span class="sourceLineNo">132</span>     * java.net.URL}&lt;/td&gt;&lt;/tr&gt; &lt;/table&gt;<a name="line.132"></a>
+<span class="sourceLineNo">133</span>     *<a name="line.133"></a>
+<span class="sourceLineNo">134</span>     * @param prefix the alias prefix, never missing<a name="line.134"></a>
+<span class="sourceLineNo">135</span>     * @param factory the factory, never missing<a name="line.135"></a>
+<span class="sourceLineNo">136</span>     *<a name="line.136"></a>
+<span class="sourceLineNo">137</span>     * @throws DuplicateConversionException if &lt;var&gt;prefix&lt;/var&gt; is already registered<a name="line.137"></a>
+<span class="sourceLineNo">138</span>     */<a name="line.138"></a>
+<span class="sourceLineNo">139</span>    public void register(@Nonnull final String prefix, @Nonnull final Conversion&lt;?, ?&gt; factory)<a name="line.139"></a>
+<span class="sourceLineNo">140</span>            throws DuplicateConversionException {<a name="line.140"></a>
+<span class="sourceLineNo">141</span>        if (null != factories.putIfAbsent(prefix, factory))<a name="line.141"></a>
+<span class="sourceLineNo">142</span>            throw new DuplicateConversionException(prefix);<a name="line.142"></a>
+<span class="sourceLineNo">143</span>    }<a name="line.143"></a>
+<span class="sourceLineNo">144</span><a name="line.144"></a>
+<span class="sourceLineNo">145</span>    /** @todo Documentation */<a name="line.145"></a>
+<span class="sourceLineNo">146</span>    @SuppressWarnings("unchecked")<a name="line.146"></a>
+<span class="sourceLineNo">147</span>    public &lt;T&gt; T convert(@Nonnull final String key, @Nonnull final String value)<a name="line.147"></a>
+<span class="sourceLineNo">148</span>            throws Exception {<a name="line.148"></a>
+<span class="sourceLineNo">149</span>        return (T) factoryFor(key).convert(value);<a name="line.149"></a>
+<span class="sourceLineNo">150</span>    }<a name="line.150"></a>
+<span class="sourceLineNo">151</span><a name="line.151"></a>
+<span class="sourceLineNo">152</span>    @Nonnull<a name="line.152"></a>
+<span class="sourceLineNo">153</span>    @SuppressWarnings({"unchecked", "ReuseOfLocalVariable"})<a name="line.153"></a>
+<span class="sourceLineNo">154</span>    private &lt;T, E extends Exception&gt; Conversion&lt;T, E&gt; factoryFor(final String type) {<a name="line.154"></a>
+<span class="sourceLineNo">155</span>        // Look for alias first<a name="line.155"></a>
+<span class="sourceLineNo">156</span>        Conversion&lt;T, E&gt; factory = (Conversion&lt;T, E&gt;) factories.get(type);<a name="line.156"></a>
+<span class="sourceLineNo">157</span>        if (null != factory)<a name="line.157"></a>
+<span class="sourceLineNo">158</span>            return factory;<a name="line.158"></a>
+<span class="sourceLineNo">159</span>        final Class&lt;T&gt; token = tokenFor(type);<a name="line.159"></a>
+<span class="sourceLineNo">160</span>        // Try Type.valueOf<a name="line.160"></a>
+<span class="sourceLineNo">161</span>        factory = invokeValueOf(token);<a name="line.161"></a>
+<span class="sourceLineNo">162</span>        if (null != factory)<a name="line.162"></a>
+<span class="sourceLineNo">163</span>            return factory;<a name="line.163"></a>
+<span class="sourceLineNo">164</span>        // Try Type.of<a name="line.164"></a>
+<span class="sourceLineNo">165</span>        factory = invokeOf(token);<a name="line.165"></a>
+<span class="sourceLineNo">166</span>        if (null != factory)<a name="line.166"></a>
+<span class="sourceLineNo">167</span>            return factory;<a name="line.167"></a>
+<span class="sourceLineNo">168</span>        // Try new Type<a name="line.168"></a>
+<span class="sourceLineNo">169</span>        factory = invokeConstructor(token);<a name="line.169"></a>
+<span class="sourceLineNo">170</span>        if (null != factory)<a name="line.170"></a>
+<span class="sourceLineNo">171</span>            return factory;<a name="line.171"></a>
+<span class="sourceLineNo">172</span>        throw new Bug("Unsupported conversion: %s", type);<a name="line.172"></a>
+<span class="sourceLineNo">173</span>    }<a name="line.173"></a>
+<span class="sourceLineNo">174</span><a name="line.174"></a>
+<span class="sourceLineNo">175</span>    @SuppressWarnings("unchecked")<a name="line.175"></a>
+<span class="sourceLineNo">176</span>    private static &lt;T, E extends Exception&gt; Conversion&lt;T, E&gt; invokeValueOf(final Class&lt;T&gt; token)<a name="line.176"></a>
+<span class="sourceLineNo">177</span>            throws NoSuchMethodError {<a name="line.177"></a>
+<span class="sourceLineNo">178</span>        try {<a name="line.178"></a>
+<span class="sourceLineNo">179</span>            final Method method = token.getMethod("valueOf", String.class);<a name="line.179"></a>
+<span class="sourceLineNo">180</span>            return value -&gt; {<a name="line.180"></a>
+<span class="sourceLineNo">181</span>                try {<a name="line.181"></a>
+<span class="sourceLineNo">182</span>                    return (T) method.invoke(null, value);<a name="line.182"></a>
+<span class="sourceLineNo">183</span>                } catch (final IllegalAccessException e) {<a name="line.183"></a>
+<span class="sourceLineNo">184</span>                    final IllegalAccessError x = new IllegalAccessError(e.getMessage());<a name="line.184"></a>
+<span class="sourceLineNo">185</span>                    x.setStackTrace(e.getStackTrace());<a name="line.185"></a>
+<span class="sourceLineNo">186</span>                    throw x;<a name="line.186"></a>
+<span class="sourceLineNo">187</span>                } catch (final InvocationTargetException e) {<a name="line.187"></a>
+<span class="sourceLineNo">188</span>                    final Throwable root = getRootCause(e);<a name="line.188"></a>
+<span class="sourceLineNo">189</span>                    final RuntimeException x = new RuntimeException(root);<a name="line.189"></a>
+<span class="sourceLineNo">190</span>                    x.setStackTrace(root.getStackTrace());<a name="line.190"></a>
+<span class="sourceLineNo">191</span>                    throw x;<a name="line.191"></a>
+<span class="sourceLineNo">192</span>                }<a name="line.192"></a>
+<span class="sourceLineNo">193</span>            };<a name="line.193"></a>
+<span class="sourceLineNo">194</span>        } catch (final NoSuchMethodException ignored) {<a name="line.194"></a>
+<span class="sourceLineNo">195</span>            return null;<a name="line.195"></a>
+<span class="sourceLineNo">196</span>        }<a name="line.196"></a>
+<span class="sourceLineNo">197</span>    }<a name="line.197"></a>
+<span class="sourceLineNo">198</span><a name="line.198"></a>
+<span class="sourceLineNo">199</span>    @SuppressWarnings("unchecked")<a name="line.199"></a>
+<span class="sourceLineNo">200</span>    private static &lt;T, E extends Exception&gt; Conversion&lt;T, E&gt; invokeOf(final Class&lt;T&gt; token)<a name="line.200"></a>
+<span class="sourceLineNo">201</span>            throws NoSuchMethodError {<a name="line.201"></a>
+<span class="sourceLineNo">202</span>        try {<a name="line.202"></a>
+<span class="sourceLineNo">203</span>            final Method method = token.getMethod("of", String.class);<a name="line.203"></a>
+<span class="sourceLineNo">204</span>            return value -&gt; {<a name="line.204"></a>
+<span class="sourceLineNo">205</span>                try {<a name="line.205"></a>
+<span class="sourceLineNo">206</span>                    return (T) method.invoke(null, value);<a name="line.206"></a>
+<span class="sourceLineNo">207</span>                } catch (final IllegalAccessException e) {<a name="line.207"></a>
+<span class="sourceLineNo">208</span>                    final IllegalAccessError x = new IllegalAccessError(e.getMessage());<a name="line.208"></a>
+<span class="sourceLineNo">209</span>                    x.setStackTrace(e.getStackTrace());<a name="line.209"></a>
+<span class="sourceLineNo">210</span>                    throw x;<a name="line.210"></a>
+<span class="sourceLineNo">211</span>                } catch (final InvocationTargetException e) {<a name="line.211"></a>
+<span class="sourceLineNo">212</span>                    final Throwable root = getRootCause(e);<a name="line.212"></a>
+<span class="sourceLineNo">213</span>                    final RuntimeException x = new RuntimeException(root);<a name="line.213"></a>
+<span class="sourceLineNo">214</span>                    x.setStackTrace(root.getStackTrace());<a name="line.214"></a>
+<span class="sourceLineNo">215</span>                    throw x;<a name="line.215"></a>
+<span class="sourceLineNo">216</span>                }<a name="line.216"></a>
+<span class="sourceLineNo">217</span>            };<a name="line.217"></a>
+<span class="sourceLineNo">218</span>        } catch (final NoSuchMethodException ignored) {<a name="line.218"></a>
+<span class="sourceLineNo">219</span>            return null;<a name="line.219"></a>
+<span class="sourceLineNo">220</span>        }<a name="line.220"></a>
+<span class="sourceLineNo">221</span>    }<a name="line.221"></a>
+<span class="sourceLineNo">222</span><a name="line.222"></a>
+<span class="sourceLineNo">223</span>    private static &lt;T, E extends Exception&gt; Conversion&lt;T, E&gt; invokeConstructor(final Class&lt;T&gt; token)<a name="line.223"></a>
+<span class="sourceLineNo">224</span>            throws NoSuchMethodError {<a name="line.224"></a>
+<span class="sourceLineNo">225</span>        try {<a name="line.225"></a>
+<span class="sourceLineNo">226</span>            final Constructor&lt;T&gt; ctor = token.getConstructor(String.class);<a name="line.226"></a>
+<span class="sourceLineNo">227</span>            return value -&gt; {<a name="line.227"></a>
+<span class="sourceLineNo">228</span>                try {<a name="line.228"></a>
+<span class="sourceLineNo">229</span>                    return ctor.newInstance(value);<a name="line.229"></a>
+<span class="sourceLineNo">230</span>                } catch (final IllegalAccessException e) {<a name="line.230"></a>
+<span class="sourceLineNo">231</span>                    final IllegalAccessError x = new IllegalAccessError(e.getMessage());<a name="line.231"></a>
+<span class="sourceLineNo">232</span>                    x.setStackTrace(e.getStackTrace());<a name="line.232"></a>
+<span class="sourceLineNo">233</span>                    throw x;<a name="line.233"></a>
+<span class="sourceLineNo">234</span>                } catch (final InvocationTargetException e) {<a name="line.234"></a>
+<span class="sourceLineNo">235</span>                    final Throwable root = getRootCause(e);<a name="line.235"></a>
+<span class="sourceLineNo">236</span>                    final RuntimeException x = new RuntimeException(root);<a name="line.236"></a>
+<span class="sourceLineNo">237</span>                    x.setStackTrace(root.getStackTrace());<a name="line.237"></a>
+<span class="sourceLineNo">238</span>                    throw x;<a name="line.238"></a>
+<span class="sourceLineNo">239</span>                } catch (final InstantiationException e) {<a name="line.239"></a>
+<span class="sourceLineNo">240</span>                    final InstantiationError x = new InstantiationError(e.getMessage());<a name="line.240"></a>
+<span class="sourceLineNo">241</span>                    x.setStackTrace(e.getStackTrace());<a name="line.241"></a>
+<span class="sourceLineNo">242</span>                    throw x;<a name="line.242"></a>
+<span class="sourceLineNo">243</span>                }<a name="line.243"></a>
+<span class="sourceLineNo">244</span>            };<a name="line.244"></a>
+<span class="sourceLineNo">245</span>        } catch (final NoSuchMethodException ignored) {<a name="line.245"></a>
+<span class="sourceLineNo">246</span>            return null;<a name="line.246"></a>
+<span class="sourceLineNo">247</span>        }<a name="line.247"></a>
+<span class="sourceLineNo">248</span>    }<a name="line.248"></a>
+<span class="sourceLineNo">249</span><a name="line.249"></a>
+<span class="sourceLineNo">250</span>    @SuppressWarnings("unchecked")<a name="line.250"></a>
+<span class="sourceLineNo">251</span>    private static &lt;T&gt; Class&lt;T&gt; tokenFor(final String type) {<a name="line.251"></a>
+<span class="sourceLineNo">252</span>        try {<a name="line.252"></a>
+<span class="sourceLineNo">253</span>            return (Class&lt;T&gt;) Class.forName(type);<a name="line.253"></a>
+<span class="sourceLineNo">254</span>        } catch (final ClassNotFoundException e) {<a name="line.254"></a>
+<span class="sourceLineNo">255</span>            final IllegalArgumentException x = new IllegalArgumentException(type + ": " + e);<a name="line.255"></a>
+<span class="sourceLineNo">256</span>            x.setStackTrace(e.getStackTrace());<a name="line.256"></a>
+<span class="sourceLineNo">257</span>            throw x;<a name="line.257"></a>
+<span class="sourceLineNo">258</span>        }<a name="line.258"></a>
+<span class="sourceLineNo">259</span>    }<a name="line.259"></a>
+<span class="sourceLineNo">260</span><a name="line.260"></a>
+<span class="sourceLineNo">261</span>    /**<a name="line.261"></a>
+<span class="sourceLineNo">262</span>     * Converts a string property value into a typed object.<a name="line.262"></a>
+<span class="sourceLineNo">263</span>     *<a name="line.263"></a>
+<span class="sourceLineNo">264</span>     * @param &lt;T&gt; the converted type<a name="line.264"></a>
+<span class="sourceLineNo">265</span>     * @param &lt;E&gt; the exception type on failed converstion, {@code RuntimeException} if none<a name="line.265"></a>
+<span class="sourceLineNo">266</span>     */<a name="line.266"></a>
+<span class="sourceLineNo">267</span>    @FunctionalInterface<a name="line.267"></a>
+<span class="sourceLineNo">268</span>    public interface Conversion&lt;T, E extends Exception&gt; {<a name="line.268"></a>
+<span class="sourceLineNo">269</span>        /**<a name="line.269"></a>
+<span class="sourceLineNo">270</span>         * Converts the given property &lt;var&gt;value&lt;/var&gt; into a typed object.<a name="line.270"></a>
+<span class="sourceLineNo">271</span>         *<a name="line.271"></a>
+<span class="sourceLineNo">272</span>         * @param value the property value, never missing<a name="line.272"></a>
+<span class="sourceLineNo">273</span>         *<a name="line.273"></a>
+<span class="sourceLineNo">274</span>         * @return the typed object<a name="line.274"></a>
+<span class="sourceLineNo">275</span>         *<a name="line.275"></a>
+<span class="sourceLineNo">276</span>         * @throws E if conversion fails<a name="line.276"></a>
+<span class="sourceLineNo">277</span>         */<a name="line.277"></a>
+<span class="sourceLineNo">278</span>        T convert(@Nonnull final String value)<a name="line.278"></a>
+<span class="sourceLineNo">279</span>                throws E;<a name="line.279"></a>
+<span class="sourceLineNo">280</span>    }<a name="line.280"></a>
+<span class="sourceLineNo">281</span><a name="line.281"></a>
+<span class="sourceLineNo">282</span>    /** @todo Documentation */<a name="line.282"></a>
+<span class="sourceLineNo">283</span>    public static class DuplicateConversionException<a name="line.283"></a>
+<span class="sourceLineNo">284</span>            extends IllegalArgumentException {<a name="line.284"></a>
+<span class="sourceLineNo">285</span>        public DuplicateConversionException(final String key) {<a name="line.285"></a>
+<span class="sourceLineNo">286</span>            super(key);<a name="line.286"></a>
+<span class="sourceLineNo">287</span>        }<a name="line.287"></a>
+<span class="sourceLineNo">288</span>    }<a name="line.288"></a>
+<span class="sourceLineNo">289</span>}<a name="line.289"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre>
+</div>
+</body>
+</html>

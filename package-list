@@ -1,0 +1,12 @@
+hm.binkley.dao
+hm.binkley.inject
+hm.binkley.util
+hm.binkley.util.function
+hm.binkley.util.logging
+hm.binkley.util.logging.osi
+hm.binkley.util.stream
+hm.binkley.util.value
+hm.binkley.xio
+hm.binkley.xml
+hm.binkley.xml.reflect
+org.nnsoft.guice.lifegycle

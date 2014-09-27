@@ -1,0 +1,263 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+<title>Source code</title>
+<link rel="stylesheet" type="text/css" href="../../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<div class="sourceContainer">
+<pre><span class="sourceLineNo">001</span>/*<a name="line.1"></a>
+<span class="sourceLineNo">002</span> * This is free and unencumbered software released into the public domain.<a name="line.2"></a>
+<span class="sourceLineNo">003</span> *<a name="line.3"></a>
+<span class="sourceLineNo">004</span> * Anyone is free to copy, modify, publish, use, compile, sell, or<a name="line.4"></a>
+<span class="sourceLineNo">005</span> * distribute this software, either in source code form or as a compiled<a name="line.5"></a>
+<span class="sourceLineNo">006</span> * binary, for any purpose, commercial or non-commercial, and by any<a name="line.6"></a>
+<span class="sourceLineNo">007</span> * means.<a name="line.7"></a>
+<span class="sourceLineNo">008</span> *<a name="line.8"></a>
+<span class="sourceLineNo">009</span> * In jurisdictions that recognize copyright laws, the author or authors<a name="line.9"></a>
+<span class="sourceLineNo">010</span> * of this software dedicate any and all copyright interest in the<a name="line.10"></a>
+<span class="sourceLineNo">011</span> * software to the public domain. We make this dedication for the benefit<a name="line.11"></a>
+<span class="sourceLineNo">012</span> * of the public at large and to the detriment of our heirs and<a name="line.12"></a>
+<span class="sourceLineNo">013</span> * successors. We intend this dedication to be an overt act of<a name="line.13"></a>
+<span class="sourceLineNo">014</span> * relinquishment in perpetuity of all present and future rights to this<a name="line.14"></a>
+<span class="sourceLineNo">015</span> * software under copyright law.<a name="line.15"></a>
+<span class="sourceLineNo">016</span> *<a name="line.16"></a>
+<span class="sourceLineNo">017</span> * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,<a name="line.17"></a>
+<span class="sourceLineNo">018</span> * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF<a name="line.18"></a>
+<span class="sourceLineNo">019</span> * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.<a name="line.19"></a>
+<span class="sourceLineNo">020</span> * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR<a name="line.20"></a>
+<span class="sourceLineNo">021</span> * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,<a name="line.21"></a>
+<span class="sourceLineNo">022</span> * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR<a name="line.22"></a>
+<span class="sourceLineNo">023</span> * OTHER DEALINGS IN THE SOFTWARE.<a name="line.23"></a>
+<span class="sourceLineNo">024</span> *<a name="line.24"></a>
+<span class="sourceLineNo">025</span> * For more information, please refer to &lt;http://unlicense.org/&gt;.<a name="line.25"></a>
+<span class="sourceLineNo">026</span> */<a name="line.26"></a>
+<span class="sourceLineNo">027</span><a name="line.27"></a>
+<span class="sourceLineNo">028</span>package hm.binkley.util.value;<a name="line.28"></a>
+<span class="sourceLineNo">029</span><a name="line.29"></a>
+<span class="sourceLineNo">030</span>import org.kohsuke.MetaInfServices;<a name="line.30"></a>
+<span class="sourceLineNo">031</span><a name="line.31"></a>
+<span class="sourceLineNo">032</span>import javax.annotation.processing.AbstractProcessor;<a name="line.32"></a>
+<span class="sourceLineNo">033</span>import javax.annotation.processing.Processor;<a name="line.33"></a>
+<span class="sourceLineNo">034</span>import javax.annotation.processing.RoundEnvironment;<a name="line.34"></a>
+<span class="sourceLineNo">035</span>import javax.annotation.processing.SupportedAnnotationTypes;<a name="line.35"></a>
+<span class="sourceLineNo">036</span>import javax.annotation.processing.SupportedSourceVersion;<a name="line.36"></a>
+<span class="sourceLineNo">037</span>import javax.lang.model.element.AnnotationMirror;<a name="line.37"></a>
+<span class="sourceLineNo">038</span>import javax.lang.model.element.AnnotationValue;<a name="line.38"></a>
+<span class="sourceLineNo">039</span>import javax.lang.model.element.Element;<a name="line.39"></a>
+<span class="sourceLineNo">040</span>import javax.lang.model.element.ExecutableElement;<a name="line.40"></a>
+<span class="sourceLineNo">041</span>import javax.lang.model.element.TypeElement;<a name="line.41"></a>
+<span class="sourceLineNo">042</span>import javax.lang.model.type.DeclaredType;<a name="line.42"></a>
+<span class="sourceLineNo">043</span>import javax.tools.Diagnostic.Kind;<a name="line.43"></a>
+<span class="sourceLineNo">044</span>import java.io.IOException;<a name="line.44"></a>
+<span class="sourceLineNo">045</span>import java.io.OutputStream;<a name="line.45"></a>
+<span class="sourceLineNo">046</span>import java.util.List;<a name="line.46"></a>
+<span class="sourceLineNo">047</span>import java.util.Scanner;<a name="line.47"></a>
+<span class="sourceLineNo">048</span>import java.util.Set;<a name="line.48"></a>
+<span class="sourceLineNo">049</span>import java.util.regex.Pattern;<a name="line.49"></a>
+<span class="sourceLineNo">050</span><a name="line.50"></a>
+<span class="sourceLineNo">051</span>import static java.lang.String.format;<a name="line.51"></a>
+<span class="sourceLineNo">052</span>import static java.nio.charset.StandardCharsets.UTF_8;<a name="line.52"></a>
+<span class="sourceLineNo">053</span>import static java.util.regex.Pattern.compile;<a name="line.53"></a>
+<span class="sourceLineNo">054</span>import static javax.lang.model.SourceVersion.RELEASE_8;<a name="line.54"></a>
+<span class="sourceLineNo">055</span>import static javax.lang.model.element.ElementKind.INTERFACE;<a name="line.55"></a>
+<span class="sourceLineNo">056</span>import static javax.lang.model.element.ElementKind.PACKAGE;<a name="line.56"></a>
+<span class="sourceLineNo">057</span>import static javax.lang.model.element.Modifier.STATIC;<a name="line.57"></a>
+<span class="sourceLineNo">058</span>import static javax.tools.Diagnostic.Kind.ERROR;<a name="line.58"></a>
+<span class="sourceLineNo">059</span>import static javax.tools.Diagnostic.Kind.NOTE;<a name="line.59"></a>
+<span class="sourceLineNo">060</span>import static javax.tools.Diagnostic.Kind.WARNING;<a name="line.60"></a>
+<span class="sourceLineNo">061</span><a name="line.61"></a>
+<span class="sourceLineNo">062</span>/**<a name="line.62"></a>
+<span class="sourceLineNo">063</span> * {@code ValueTypeProcessor} &lt;b&gt;needs documentation&lt;/b&gt;.<a name="line.63"></a>
+<span class="sourceLineNo">064</span> *<a name="line.64"></a>
+<span class="sourceLineNo">065</span> * @author &lt;a href="mailto:binkley@alumni.rice.edu"&gt;B. K. Oxley (binkley)&lt;/a&gt;<a name="line.65"></a>
+<span class="sourceLineNo">066</span> * @todo Needs documentation.<a name="line.66"></a>
+<span class="sourceLineNo">067</span> */<a name="line.67"></a>
+<span class="sourceLineNo">068</span>@MetaInfServices(Processor.class)<a name="line.68"></a>
+<span class="sourceLineNo">069</span>@SupportedAnnotationTypes("hm.binkley.util.value.ValueType")<a name="line.69"></a>
+<span class="sourceLineNo">070</span>@SupportedSourceVersion(RELEASE_8)<a name="line.70"></a>
+<span class="sourceLineNo">071</span>public final class ValueTypeProcessor<a name="line.71"></a>
+<span class="sourceLineNo">072</span>        extends AbstractProcessor {<a name="line.72"></a>
+<span class="sourceLineNo">073</span>    private static final Pattern packageVar = compile("\\$\\{package\\}");<a name="line.73"></a>
+<span class="sourceLineNo">074</span>    private static final Pattern classVar = compile("\\$\\{class\\}");<a name="line.74"></a>
+<span class="sourceLineNo">075</span>    private static final Pattern baseVar = compile("\\$\\{base\\}");<a name="line.75"></a>
+<span class="sourceLineNo">076</span>    private static final Pattern typeVar = compile("\\$\\{type\\}");<a name="line.76"></a>
+<span class="sourceLineNo">077</span>    private static final Pattern modifyVar = compile("\\$\\{modify\\}");<a name="line.77"></a>
+<span class="sourceLineNo">078</span><a name="line.78"></a>
+<span class="sourceLineNo">079</span>    private final String template;<a name="line.79"></a>
+<span class="sourceLineNo">080</span><a name="line.80"></a>
+<span class="sourceLineNo">081</span>    public ValueTypeProcessor() {<a name="line.81"></a>
+<span class="sourceLineNo">082</span>        try (final Scanner scanner = new Scanner(getClass().getResourceAsStream("value-type.java"),<a name="line.82"></a>
+<span class="sourceLineNo">083</span>                UTF_8.name())) {<a name="line.83"></a>
+<span class="sourceLineNo">084</span>            template = scanner.useDelimiter("\\A").next();<a name="line.84"></a>
+<span class="sourceLineNo">085</span>        }<a name="line.85"></a>
+<span class="sourceLineNo">086</span>    }<a name="line.86"></a>
+<span class="sourceLineNo">087</span><a name="line.87"></a>
+<span class="sourceLineNo">088</span>    @Override<a name="line.88"></a>
+<span class="sourceLineNo">089</span>    public boolean process(final Set&lt;? extends TypeElement&gt; annotations,<a name="line.89"></a>
+<span class="sourceLineNo">090</span>            final RoundEnvironment roundEnv) {<a name="line.90"></a>
+<span class="sourceLineNo">091</span>        ELEMENT:<a name="line.91"></a>
+<span class="sourceLineNo">092</span>        for (final Element element : roundEnv.getElementsAnnotatedWith(<a name="line.92"></a>
+<span class="sourceLineNo">093</span>                processingEnv.getElementUtils().getTypeElement(ValueType.class.getName()))) {<a name="line.93"></a>
+<span class="sourceLineNo">094</span>            final List&lt;? extends AnnotationMirror&gt; aMirrors = element.getAnnotationMirrors();<a name="line.94"></a>
+<span class="sourceLineNo">095</span>            for (final AnnotationMirror mirror : aMirrors) {<a name="line.95"></a>
+<span class="sourceLineNo">096</span>                if (!ValueType.class.getName().equals(mirror.getAnnotationType().toString()))<a name="line.96"></a>
+<span class="sourceLineNo">097</span>                    continue;<a name="line.97"></a>
+<span class="sourceLineNo">098</span><a name="line.98"></a>
+<span class="sourceLineNo">099</span>                final Messenger messenger = new Messenger(element, mirror);<a name="line.99"></a>
+<span class="sourceLineNo">100</span><a name="line.100"></a>
+<span class="sourceLineNo">101</span>                if (INTERFACE != element.getKind()) {<a name="line.101"></a>
+<span class="sourceLineNo">102</span>                    messenger.error("@ValueType only supported on interfaces");<a name="line.102"></a>
+<span class="sourceLineNo">103</span>                    continue;<a name="line.103"></a>
+<span class="sourceLineNo">104</span>                }<a name="line.104"></a>
+<span class="sourceLineNo">105</span><a name="line.105"></a>
+<span class="sourceLineNo">106</span>                if (PACKAGE != element.getEnclosingElement().getKind()) {<a name="line.106"></a>
+<span class="sourceLineNo">107</span>                    messenger.error("@ValueType only supported on top-level interfaces");<a name="line.107"></a>
+<span class="sourceLineNo">108</span>                    continue;<a name="line.108"></a>
+<span class="sourceLineNo">109</span>                }<a name="line.109"></a>
+<span class="sourceLineNo">110</span><a name="line.110"></a>
+<span class="sourceLineNo">111</span>                ((TypeElement) element).getEnclosedElements().stream().<a name="line.111"></a>
+<span class="sourceLineNo">112</span>                        map(ExecutableElement.class::cast).<a name="line.112"></a>
+<span class="sourceLineNo">113</span>                        filter(ValueTypeProcessor::unsupported).<a name="line.113"></a>
+<span class="sourceLineNo">114</span>                        forEach(m -&gt; messenger<a name="line.114"></a>
+<span class="sourceLineNo">115</span>                                .error("@ValueType supports only static and default methods: %s",<a name="line.115"></a>
+<span class="sourceLineNo">116</span>                                        m));<a name="line.116"></a>
+<span class="sourceLineNo">117</span><a name="line.117"></a>
+<span class="sourceLineNo">118</span>                // Rely on knowledge there is only the value field<a name="line.118"></a>
+<span class="sourceLineNo">119</span>                final AnnotationValue value = mirror.getElementValues().values().stream().<a name="line.119"></a>
+<span class="sourceLineNo">120</span>                        findFirst().get();<a name="line.120"></a>
+<span class="sourceLineNo">121</span><a name="line.121"></a>
+<span class="sourceLineNo">122</span>                final String packaj = processingEnv.getElementUtils().getPackageOf(element)<a name="line.122"></a>
+<span class="sourceLineNo">123</span>                        .getQualifiedName().toString();<a name="line.123"></a>
+<span class="sourceLineNo">124</span>                final String clazz = element.getSimpleName().toString();<a name="line.124"></a>
+<span class="sourceLineNo">125</span>                final String source = format("%s.%sValue", packaj, clazz);<a name="line.125"></a>
+<span class="sourceLineNo">126</span>                final DeclaredType valueType = (DeclaredType) value.getValue();<a name="line.126"></a>
+<span class="sourceLineNo">127</span>                final String type = valueType.toString();<a name="line.127"></a>
+<span class="sourceLineNo">128</span>                final String modify = "java.lang.String".equals(type) ? ".intern()" : "";<a name="line.128"></a>
+<span class="sourceLineNo">129</span><a name="line.129"></a>
+<span class="sourceLineNo">130</span>                final boolean comparable = comparable(valueType);<a name="line.130"></a>
+<span class="sourceLineNo">131</span>                final String base = comparable ? "ComparableValue" : "Value";<a name="line.131"></a>
+<span class="sourceLineNo">132</span><a name="line.132"></a>
+<span class="sourceLineNo">133</span>                try (final OutputStream out = processingEnv.getFiler()<a name="line.133"></a>
+<span class="sourceLineNo">134</span>                        .createSourceFile(source, element).openOutputStream()) {<a name="line.134"></a>
+<span class="sourceLineNo">135</span>                    String generated = packageVar.matcher(template).replaceAll(packaj);<a name="line.135"></a>
+<span class="sourceLineNo">136</span>                    generated = classVar.matcher(generated).replaceAll(clazz);<a name="line.136"></a>
+<span class="sourceLineNo">137</span>                    generated = baseVar.matcher(generated).replaceAll(base);<a name="line.137"></a>
+<span class="sourceLineNo">138</span>                    generated = typeVar.matcher(generated).replaceAll(type);<a name="line.138"></a>
+<span class="sourceLineNo">139</span>                    generated = modifyVar.matcher(generated).replaceAll(modify);<a name="line.139"></a>
+<span class="sourceLineNo">140</span>                    out.write(generated.getBytes(UTF_8));<a name="line.140"></a>
+<span class="sourceLineNo">141</span>                } catch (final IOException e) {<a name="line.141"></a>
+<span class="sourceLineNo">142</span>                    messenger.error("Cannot generate source: %s", e);<a name="line.142"></a>
+<span class="sourceLineNo">143</span>                    continue ELEMENT;<a name="line.143"></a>
+<span class="sourceLineNo">144</span>                }<a name="line.144"></a>
+<span class="sourceLineNo">145</span><a name="line.145"></a>
+<span class="sourceLineNo">146</span>                messenger.note("Generated %s.java", source);<a name="line.146"></a>
+<span class="sourceLineNo">147</span>            }<a name="line.147"></a>
+<span class="sourceLineNo">148</span>        }<a name="line.148"></a>
+<span class="sourceLineNo">149</span><a name="line.149"></a>
+<span class="sourceLineNo">150</span>        return true;<a name="line.150"></a>
+<span class="sourceLineNo">151</span>    }<a name="line.151"></a>
+<span class="sourceLineNo">152</span><a name="line.152"></a>
+<span class="sourceLineNo">153</span>    private static boolean unsupported(final ExecutableElement e) {<a name="line.153"></a>
+<span class="sourceLineNo">154</span>        return !(e.isDefault() || e.getModifiers().contains(STATIC));<a name="line.154"></a>
+<span class="sourceLineNo">155</span>    }<a name="line.155"></a>
+<span class="sourceLineNo">156</span><a name="line.156"></a>
+<span class="sourceLineNo">157</span>    private static boolean comparable(final DeclaredType type) {<a name="line.157"></a>
+<span class="sourceLineNo">158</span>        final String comparable = format("java.lang.Comparable&lt;%s&gt;", type);<a name="line.158"></a>
+<span class="sourceLineNo">159</span>        return ((TypeElement) type.asElement()).getInterfaces().stream().<a name="line.159"></a>
+<span class="sourceLineNo">160</span>                map(Object::toString).<a name="line.160"></a>
+<span class="sourceLineNo">161</span>                filter(comparable::equals).<a name="line.161"></a>
+<span class="sourceLineNo">162</span>                findFirst().<a name="line.162"></a>
+<span class="sourceLineNo">163</span>                isPresent();<a name="line.163"></a>
+<span class="sourceLineNo">164</span>    }<a name="line.164"></a>
+<span class="sourceLineNo">165</span><a name="line.165"></a>
+<span class="sourceLineNo">166</span>    private final class Messenger {<a name="line.166"></a>
+<span class="sourceLineNo">167</span>        private final Element element;<a name="line.167"></a>
+<span class="sourceLineNo">168</span>        private final AnnotationMirror mirror;<a name="line.168"></a>
+<span class="sourceLineNo">169</span><a name="line.169"></a>
+<span class="sourceLineNo">170</span>        private Messenger(final Element element, final AnnotationMirror mirror) {<a name="line.170"></a>
+<span class="sourceLineNo">171</span>            this.element = element;<a name="line.171"></a>
+<span class="sourceLineNo">172</span>            this.mirror = mirror;<a name="line.172"></a>
+<span class="sourceLineNo">173</span>        }<a name="line.173"></a>
+<span class="sourceLineNo">174</span><a name="line.174"></a>
+<span class="sourceLineNo">175</span>        void error(final String format, final Object... args) {<a name="line.175"></a>
+<span class="sourceLineNo">176</span>            message(ERROR, format, args);<a name="line.176"></a>
+<span class="sourceLineNo">177</span>        }<a name="line.177"></a>
+<span class="sourceLineNo">178</span><a name="line.178"></a>
+<span class="sourceLineNo">179</span>        void warning(final String format, final Object... args) {<a name="line.179"></a>
+<span class="sourceLineNo">180</span>            message(WARNING, format, args);<a name="line.180"></a>
+<span class="sourceLineNo">181</span>        }<a name="line.181"></a>
+<span class="sourceLineNo">182</span><a name="line.182"></a>
+<span class="sourceLineNo">183</span>        void note(final String format, final Object... args) {<a name="line.183"></a>
+<span class="sourceLineNo">184</span>            message(NOTE, format, args);<a name="line.184"></a>
+<span class="sourceLineNo">185</span>        }<a name="line.185"></a>
+<span class="sourceLineNo">186</span><a name="line.186"></a>
+<span class="sourceLineNo">187</span>        private void message(final Kind kind, final String format, final Object... args) {<a name="line.187"></a>
+<span class="sourceLineNo">188</span>            processingEnv.getMessager().printMessage(kind, format(format, args), element, mirror);<a name="line.188"></a>
+<span class="sourceLineNo">189</span>        }<a name="line.189"></a>
+<span class="sourceLineNo">190</span>    }<a name="line.190"></a>
+<span class="sourceLineNo">191</span>}<a name="line.191"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre>
+</div>
+</body>
+</html>

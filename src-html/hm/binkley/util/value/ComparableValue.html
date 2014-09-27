@@ -1,0 +1,97 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+<title>Source code</title>
+<link rel="stylesheet" type="text/css" href="../../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<div class="sourceContainer">
+<pre><span class="sourceLineNo">001</span>package hm.binkley.util.value;<a name="line.1"></a>
+<span class="sourceLineNo">002</span><a name="line.2"></a>
+<span class="sourceLineNo">003</span>import javax.annotation.Nonnull;<a name="line.3"></a>
+<span class="sourceLineNo">004</span><a name="line.4"></a>
+<span class="sourceLineNo">005</span>import static java.util.Objects.requireNonNull;<a name="line.5"></a>
+<span class="sourceLineNo">006</span><a name="line.6"></a>
+<span class="sourceLineNo">007</span>/**<a name="line.7"></a>
+<span class="sourceLineNo">008</span> * {@code StringValue} &lt;b&gt;needs documentation&lt;/b&gt;.<a name="line.8"></a>
+<span class="sourceLineNo">009</span> *<a name="line.9"></a>
+<span class="sourceLineNo">010</span> * @author &lt;a href="mailto:binkley@alumni.rice.edu"&gt;B. K. Oxley (binkley)&lt;/a&gt;<a name="line.10"></a>
+<span class="sourceLineNo">011</span> * @todo Needs documentation.<a name="line.11"></a>
+<span class="sourceLineNo">012</span> */<a name="line.12"></a>
+<span class="sourceLineNo">013</span>public abstract class ComparableValue&lt;T extends Comparable&lt;T&gt;, V extends ComparableValue&lt;T, V&gt;&gt;<a name="line.13"></a>
+<span class="sourceLineNo">014</span>        extends Value&lt;T, V&gt;<a name="line.14"></a>
+<span class="sourceLineNo">015</span>        implements Comparable&lt;V&gt; {<a name="line.15"></a>
+<span class="sourceLineNo">016</span>    protected ComparableValue(@Nonnull final T value) {<a name="line.16"></a>
+<span class="sourceLineNo">017</span>        super(value);<a name="line.17"></a>
+<span class="sourceLineNo">018</span>    }<a name="line.18"></a>
+<span class="sourceLineNo">019</span><a name="line.19"></a>
+<span class="sourceLineNo">020</span>    @Override<a name="line.20"></a>
+<span class="sourceLineNo">021</span>    public final int compareTo(@Nonnull final V that) {<a name="line.21"></a>
+<span class="sourceLineNo">022</span>        requireNonNull(that, "that");<a name="line.22"></a>
+<span class="sourceLineNo">023</span>        return value.compareTo(that.value);<a name="line.23"></a>
+<span class="sourceLineNo">024</span>    }<a name="line.24"></a>
+<span class="sourceLineNo">025</span>}<a name="line.25"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre>
+</div>
+</body>
+</html>

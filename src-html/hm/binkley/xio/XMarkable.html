@@ -1,0 +1,156 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+<title>Source code</title>
+<link rel="stylesheet" type="text/css" href="../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<div class="sourceContainer">
+<pre><span class="sourceLineNo">001</span>package hm.binkley.xio;<a name="line.1"></a>
+<span class="sourceLineNo">002</span><a name="line.2"></a>
+<span class="sourceLineNo">003</span>import java.io.IOException;<a name="line.3"></a>
+<span class="sourceLineNo">004</span><a name="line.4"></a>
+<span class="sourceLineNo">005</span>/**<a name="line.5"></a>
+<span class="sourceLineNo">006</span> * {@code Markable} represents markable I/O streams: those which may mark a position and return to<a name="line.6"></a>
+<span class="sourceLineNo">007</span> * it later.<a name="line.7"></a>
+<span class="sourceLineNo">008</span> *<a name="line.8"></a>
+<span class="sourceLineNo">009</span> * @author &lt;a href="mailto:binkley@alumni.rice.edu"&gt;B. K. Oxley (binkley)&lt;/a&gt;<a name="line.9"></a>
+<span class="sourceLineNo">010</span> */<a name="line.10"></a>
+<span class="sourceLineNo">011</span>public interface XMarkable {<a name="line.11"></a>
+<span class="sourceLineNo">012</span>    /**<a name="line.12"></a>
+<span class="sourceLineNo">013</span>     * Gets the most recent marked position or -1 if none.<a name="line.13"></a>
+<span class="sourceLineNo">014</span>     *<a name="line.14"></a>
+<span class="sourceLineNo">015</span>     * @return the most recent marked position or -1<a name="line.15"></a>
+<span class="sourceLineNo">016</span>     *<a name="line.16"></a>
+<span class="sourceLineNo">017</span>     * @see #mark(long)<a name="line.17"></a>
+<span class="sourceLineNo">018</span>     */<a name="line.18"></a>
+<span class="sourceLineNo">019</span>    long mark();<a name="line.19"></a>
+<span class="sourceLineNo">020</span><a name="line.20"></a>
+<span class="sourceLineNo">021</span>    /**<a name="line.21"></a>
+<span class="sourceLineNo">022</span>     * Marks the current position in this input stream. A subsequent call to the {@code reset}<a name="line.22"></a>
+<span class="sourceLineNo">023</span>     * method repositions this stream at the last marked position so that subsequent reads re-read<a name="line.23"></a>
+<span class="sourceLineNo">024</span>     * the same bytes.<a name="line.24"></a>
+<span class="sourceLineNo">025</span>     *<a name="line.25"></a>
+<span class="sourceLineNo">026</span>     * &lt;p&gt; The {@code mark} arguments tells this input stream to allow that many bytes to be<a name="line.26"></a>
+<span class="sourceLineNo">027</span>     * read before the mark position gets invalidated.<a name="line.27"></a>
+<span class="sourceLineNo">028</span>     *<a name="line.28"></a>
+<span class="sourceLineNo">029</span>     * &lt;p&gt; The general contract of {@code mark} is that, if the method<a name="line.29"></a>
+<span class="sourceLineNo">030</span>     * {@code markSupported} returns {@code true}, the stream somehow remembers all the<a name="line.30"></a>
+<span class="sourceLineNo">031</span>     * bytes read after the call to {@code mark} and stands ready to supply those same bytes<a name="line.31"></a>
+<span class="sourceLineNo">032</span>     * again if and whenever the method {@code reset} is called.  However, the stream is not<a name="line.32"></a>
+<span class="sourceLineNo">033</span>     * required to remember any data at all if more than {@code mark} bytes are read from the<a name="line.33"></a>
+<span class="sourceLineNo">034</span>     * stream before {@code reset} is called.<a name="line.34"></a>
+<span class="sourceLineNo">035</span>     *<a name="line.35"></a>
+<span class="sourceLineNo">036</span>     * &lt;p&gt; Marking a closed stream should not have any effect on the stream.<a name="line.36"></a>
+<span class="sourceLineNo">037</span>     *<a name="line.37"></a>
+<span class="sourceLineNo">038</span>     * &lt;p&gt; The {@code mark} method of {@code InputStream} does nothing.<a name="line.38"></a>
+<span class="sourceLineNo">039</span>     *<a name="line.39"></a>
+<span class="sourceLineNo">040</span>     * @param mark the maximum limit of bytes that can be read before the mark position becomes<a name="line.40"></a>
+<span class="sourceLineNo">041</span>     * invalid.<a name="line.41"></a>
+<span class="sourceLineNo">042</span>     *<a name="line.42"></a>
+<span class="sourceLineNo">043</span>     * @see #reset()<a name="line.43"></a>
+<span class="sourceLineNo">044</span>     */<a name="line.44"></a>
+<span class="sourceLineNo">045</span>    void mark(final long mark);<a name="line.45"></a>
+<span class="sourceLineNo">046</span><a name="line.46"></a>
+<span class="sourceLineNo">047</span>    /**<a name="line.47"></a>
+<span class="sourceLineNo">048</span>     * Repositions this stream to the position at the time the {@code mark} method was last<a name="line.48"></a>
+<span class="sourceLineNo">049</span>     * called on this input stream.<a name="line.49"></a>
+<span class="sourceLineNo">050</span>     *<a name="line.50"></a>
+<span class="sourceLineNo">051</span>     * &lt;p&gt; The general contract of {@code reset} is:<a name="line.51"></a>
+<span class="sourceLineNo">052</span>     *<a name="line.52"></a>
+<span class="sourceLineNo">053</span>     * &lt;ul&gt; &lt;li&gt; If the method {@code markSupported} returns {@code true}, then:<a name="line.53"></a>
+<span class="sourceLineNo">054</span>     *<a name="line.54"></a>
+<span class="sourceLineNo">055</span>     * &lt;ul&gt;&lt;li&gt; If the method {@code mark} has not been called since the stream was created, or<a name="line.55"></a>
+<span class="sourceLineNo">056</span>     * the number of bytes read from the stream since {@code mark} was last called is larger<a name="line.56"></a>
+<span class="sourceLineNo">057</span>     * than the argument to {@code mark} at that last call, then an {@code IOException}<a name="line.57"></a>
+<span class="sourceLineNo">058</span>     * might be thrown.<a name="line.58"></a>
+<span class="sourceLineNo">059</span>     *<a name="line.59"></a>
+<span class="sourceLineNo">060</span>     * &lt;li&gt; If such an {@code IOException} is not thrown, then the stream is reset to a state<a name="line.60"></a>
+<span class="sourceLineNo">061</span>     * such that all the bytes read since the most recent call to {@code mark} (or since the<a name="line.61"></a>
+<span class="sourceLineNo">062</span>     * start of the file, if {@code mark} has not been called) will be resupplied to subsequent<a name="line.62"></a>
+<span class="sourceLineNo">063</span>     * callers of the {@code read} method, followed by any bytes that otherwise would have been<a name="line.63"></a>
+<span class="sourceLineNo">064</span>     * the next input data as of the time of the call to {@code reset}. &lt;/ul&gt;<a name="line.64"></a>
+<span class="sourceLineNo">065</span>     *<a name="line.65"></a>
+<span class="sourceLineNo">066</span>     * &lt;li&gt; If the method {@code markSupported} returns {@code false}, then:<a name="line.66"></a>
+<span class="sourceLineNo">067</span>     *<a name="line.67"></a>
+<span class="sourceLineNo">068</span>     * &lt;ul&gt;&lt;li&gt; The call to {@code reset} may throw an {@code IOException}.<a name="line.68"></a>
+<span class="sourceLineNo">069</span>     *<a name="line.69"></a>
+<span class="sourceLineNo">070</span>     * &lt;li&gt; If an {@code IOException} is not thrown, then the stream is reset to a fixed state<a name="line.70"></a>
+<span class="sourceLineNo">071</span>     * that depends on the particular type of the input stream and how it was created. The bytes<a name="line.71"></a>
+<span class="sourceLineNo">072</span>     * that will be supplied to subsequent callers of the {@code read} method depend on the<a name="line.72"></a>
+<span class="sourceLineNo">073</span>     * particular type of the input stream. &lt;/ul&gt;&lt;/ul&gt;<a name="line.73"></a>
+<span class="sourceLineNo">074</span>     *<a name="line.74"></a>
+<span class="sourceLineNo">075</span>     * &lt;p&gt;The method {@code reset} for class {@code InputStream} does nothing except throw<a name="line.75"></a>
+<span class="sourceLineNo">076</span>     * an {@code IOException}.<a name="line.76"></a>
+<span class="sourceLineNo">077</span>     *<a name="line.77"></a>
+<span class="sourceLineNo">078</span>     * @throws IOException if this stream has not been marked or if the mark has been invalidated.<a name="line.78"></a>
+<span class="sourceLineNo">079</span>     * @see #mark(long)<a name="line.79"></a>
+<span class="sourceLineNo">080</span>     * @see IOException<a name="line.80"></a>
+<span class="sourceLineNo">081</span>     */<a name="line.81"></a>
+<span class="sourceLineNo">082</span>    void reset()<a name="line.82"></a>
+<span class="sourceLineNo">083</span>            throws IOException;<a name="line.83"></a>
+<span class="sourceLineNo">084</span>}<a name="line.84"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre>
+</div>
+</body>
+</html>

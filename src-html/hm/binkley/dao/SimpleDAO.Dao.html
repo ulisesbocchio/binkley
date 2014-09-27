@@ -1,0 +1,255 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+<title>Source code</title>
+<link rel="stylesheet" type="text/css" href="../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<div class="sourceContainer">
+<pre><span class="sourceLineNo">001</span>package hm.binkley.dao;<a name="line.1"></a>
+<span class="sourceLineNo">002</span><a name="line.2"></a>
+<span class="sourceLineNo">003</span>import org.springframework.dao.DataAccessException;<a name="line.3"></a>
+<span class="sourceLineNo">004</span>import org.springframework.jdbc.core.JdbcTemplate;<a name="line.4"></a>
+<span class="sourceLineNo">005</span>import org.springframework.jdbc.datasource.DataSourceTransactionManager;<a name="line.5"></a>
+<span class="sourceLineNo">006</span>import org.springframework.jdbc.support.MetaDataAccessException;<a name="line.6"></a>
+<span class="sourceLineNo">007</span>import org.springframework.jdbc.support.SQLExceptionTranslator;<a name="line.7"></a>
+<span class="sourceLineNo">008</span>import org.springframework.transaction.TransactionStatus;<a name="line.8"></a>
+<span class="sourceLineNo">009</span>import org.springframework.transaction.support.TransactionTemplate;<a name="line.9"></a>
+<span class="sourceLineNo">010</span><a name="line.10"></a>
+<span class="sourceLineNo">011</span>import javax.annotation.Nonnull;<a name="line.11"></a>
+<span class="sourceLineNo">012</span>import javax.annotation.Nullable;<a name="line.12"></a>
+<span class="sourceLineNo">013</span>import javax.inject.Inject;<a name="line.13"></a>
+<span class="sourceLineNo">014</span>import java.sql.DatabaseMetaData;<a name="line.14"></a>
+<span class="sourceLineNo">015</span>import java.sql.SQLException;<a name="line.15"></a>
+<span class="sourceLineNo">016</span>import java.util.List;<a name="line.16"></a>
+<span class="sourceLineNo">017</span>import java.util.Optional;<a name="line.17"></a>
+<span class="sourceLineNo">018</span>import java.util.function.Function;<a name="line.18"></a>
+<span class="sourceLineNo">019</span><a name="line.19"></a>
+<span class="sourceLineNo">020</span>import static org.springframework.jdbc.support.JdbcUtils.extractDatabaseMetaData;<a name="line.20"></a>
+<span class="sourceLineNo">021</span><a name="line.21"></a>
+<span class="sourceLineNo">022</span>/**<a name="line.22"></a>
+<span class="sourceLineNo">023</span> * A very simple DAO wrapper for using Spring transactions and JDBC template, designed for lambda<a name="line.23"></a>
+<span class="sourceLineNo">024</span> * use.  Example:<a name="line.24"></a>
+<span class="sourceLineNo">025</span> *<a name="line.25"></a>
+<span class="sourceLineNo">026</span> * &lt;pre&gt;<a name="line.26"></a>
+<span class="sourceLineNo">027</span> * SimpleDAO&amp;lt;String&amp;gt; someColumn = new SimpleDAO(transactionManager);<a name="line.27"></a>
+<span class="sourceLineNo">028</span> * String columnValue = someColumn.dao(<a name="line.28"></a>
+<span class="sourceLineNo">029</span> *        (jdbcTemplate, status) -&amp;gt; jdbcTemplate.queryForObject("sql here", String.class);&lt;/pre&gt;<a name="line.29"></a>
+<span class="sourceLineNo">030</span> *<a name="line.30"></a>
+<span class="sourceLineNo">031</span> * @author &lt;a href="binkley@alumni.rice.edu"&gt;B. K. Oxley (binkley)&lt;/a&gt;<a name="line.31"></a>
+<span class="sourceLineNo">032</span> */<a name="line.32"></a>
+<span class="sourceLineNo">033</span>public class SimpleDAO {<a name="line.33"></a>
+<span class="sourceLineNo">034</span>    private final DataSourceTransactionManager transactionManager;<a name="line.34"></a>
+<span class="sourceLineNo">035</span><a name="line.35"></a>
+<span class="sourceLineNo">036</span>    /**<a name="line.36"></a>
+<span class="sourceLineNo">037</span>     * Constructs a new {@code SimpleDAO} with the given data source &lt;var&gt;transactionManager&lt;/var&gt;.<a name="line.37"></a>
+<span class="sourceLineNo">038</span>     *<a name="line.38"></a>
+<span class="sourceLineNo">039</span>     * @param transactionManager the transaction manager, never missing<a name="line.39"></a>
+<span class="sourceLineNo">040</span>     */<a name="line.40"></a>
+<span class="sourceLineNo">041</span>    @Inject<a name="line.41"></a>
+<span class="sourceLineNo">042</span>    public SimpleDAO(@Nonnull final DataSourceTransactionManager transactionManager) {<a name="line.42"></a>
+<span class="sourceLineNo">043</span>        this.transactionManager = transactionManager;<a name="line.43"></a>
+<span class="sourceLineNo">044</span>    }<a name="line.44"></a>
+<span class="sourceLineNo">045</span><a name="line.45"></a>
+<span class="sourceLineNo">046</span>    /**<a name="line.46"></a>
+<span class="sourceLineNo">047</span>     * Access to the underlying transaction manager.<a name="line.47"></a>
+<span class="sourceLineNo">048</span>     *<a name="line.48"></a>
+<span class="sourceLineNo">049</span>     * @return the transaction manager, never missing<a name="line.49"></a>
+<span class="sourceLineNo">050</span>     */<a name="line.50"></a>
+<span class="sourceLineNo">051</span>    @Nonnull<a name="line.51"></a>
+<span class="sourceLineNo">052</span>    public final DataSourceTransactionManager getTransactionManager() {<a name="line.52"></a>
+<span class="sourceLineNo">053</span>        return transactionManager;<a name="line.53"></a>
+<span class="sourceLineNo">054</span>    }<a name="line.54"></a>
+<span class="sourceLineNo">055</span><a name="line.55"></a>
+<span class="sourceLineNo">056</span>    /**<a name="line.56"></a>
+<span class="sourceLineNo">057</span>     * Gets JDBC URL for this transaction manager.  This uses two connections, managed within.<a name="line.57"></a>
+<span class="sourceLineNo">058</span>     *<a name="line.58"></a>
+<span class="sourceLineNo">059</span>     * @return the JDBC URL or {@code null} if not applicable for the data source<a name="line.59"></a>
+<span class="sourceLineNo">060</span>     *<a name="line.60"></a>
+<span class="sourceLineNo">061</span>     * @throws DataAccessException if JDBC fails<a name="line.61"></a>
+<span class="sourceLineNo">062</span>     * @throws MetaDataAccessException if JDBC database metadata fails<a name="line.62"></a>
+<span class="sourceLineNo">063</span>     */<a name="line.63"></a>
+<span class="sourceLineNo">064</span>    @Nullable<a name="line.64"></a>
+<span class="sourceLineNo">065</span>    public String getJdbcUrl()<a name="line.65"></a>
+<span class="sourceLineNo">066</span>            throws DataAccessException, MetaDataAccessException {<a name="line.66"></a>
+<span class="sourceLineNo">067</span>        return (String) extractDatabaseMetaData(transactionManager.getDataSource(),<a name="line.67"></a>
+<span class="sourceLineNo">068</span>                DatabaseMetaData::getURL);<a name="line.68"></a>
+<span class="sourceLineNo">069</span>    }<a name="line.69"></a>
+<span class="sourceLineNo">070</span><a name="line.70"></a>
+<span class="sourceLineNo">071</span>    /**<a name="line.71"></a>
+<span class="sourceLineNo">072</span>     * Runs the given &lt;var&gt;dao&lt;/var&gt; within Spring transaction.<a name="line.72"></a>
+<span class="sourceLineNo">073</span>     *<a name="line.73"></a>
+<span class="sourceLineNo">074</span>     * @param dao the dao callback, never missing<a name="line.74"></a>
+<span class="sourceLineNo">075</span>     * @param &lt;T&gt; the return type of the callback<a name="line.75"></a>
+<span class="sourceLineNo">076</span>     *<a name="line.76"></a>
+<span class="sourceLineNo">077</span>     * @return the callback result<a name="line.77"></a>
+<span class="sourceLineNo">078</span>     */<a name="line.78"></a>
+<span class="sourceLineNo">079</span>    public final &lt;T&gt; T dao(@Nonnull final Dao&lt;T&gt; dao) {<a name="line.79"></a>
+<span class="sourceLineNo">080</span>        return dao.using(transactionManager);<a name="line.80"></a>
+<span class="sourceLineNo">081</span>    }<a name="line.81"></a>
+<span class="sourceLineNo">082</span><a name="line.82"></a>
+<span class="sourceLineNo">083</span>    /**<a name="line.83"></a>
+<span class="sourceLineNo">084</span>     * Runs the given &lt;var&gt;dao&lt;/var&gt; within Spring transaction, requiring 0 or 1 results.<a name="line.84"></a>
+<span class="sourceLineNo">085</span>     *<a name="line.85"></a>
+<span class="sourceLineNo">086</span>     * @param dao the dao callback, never missing<a name="line.86"></a>
+<span class="sourceLineNo">087</span>     * @param wrongSize the exception factory for 2 or more results, never missing<a name="line.87"></a>
+<span class="sourceLineNo">088</span>     * @param &lt;T&gt; the return type of the callback<a name="line.88"></a>
+<span class="sourceLineNo">089</span>     *<a name="line.89"></a>
+<span class="sourceLineNo">090</span>     * @return an optional of the return<a name="line.90"></a>
+<span class="sourceLineNo">091</span>     *<a name="line.91"></a>
+<span class="sourceLineNo">092</span>     * @throws DataAccessException if the results are the wrong size<a name="line.92"></a>
+<span class="sourceLineNo">093</span>     */<a name="line.93"></a>
+<span class="sourceLineNo">094</span>    public final &lt;T&gt; Optional&lt;T&gt; daoMaybe(@Nonnull final Dao&lt;List&lt;T&gt;&gt; dao,<a name="line.94"></a>
+<span class="sourceLineNo">095</span>            @Nonnull final Function&lt;Integer, DataAccessException&gt; wrongSize) {<a name="line.95"></a>
+<span class="sourceLineNo">096</span>        final List&lt;T&gt; result = dao(dao);<a name="line.96"></a>
+<span class="sourceLineNo">097</span>        final int size = result.size();<a name="line.97"></a>
+<span class="sourceLineNo">098</span>        switch (size) {<a name="line.98"></a>
+<span class="sourceLineNo">099</span>        case 0:<a name="line.99"></a>
+<span class="sourceLineNo">100</span>            return Optional.empty();<a name="line.100"></a>
+<span class="sourceLineNo">101</span>        case 1:<a name="line.101"></a>
+<span class="sourceLineNo">102</span>            return Optional.of(result.get(0));<a name="line.102"></a>
+<span class="sourceLineNo">103</span>        default:<a name="line.103"></a>
+<span class="sourceLineNo">104</span>            throw wrongSize.apply(size);<a name="line.104"></a>
+<span class="sourceLineNo">105</span>        }<a name="line.105"></a>
+<span class="sourceLineNo">106</span>    }<a name="line.106"></a>
+<span class="sourceLineNo">107</span><a name="line.107"></a>
+<span class="sourceLineNo">108</span>    /**<a name="line.108"></a>
+<span class="sourceLineNo">109</span>     * The functional interface for {@link #dao(Dao)}.<a name="line.109"></a>
+<span class="sourceLineNo">110</span>     *<a name="line.110"></a>
+<span class="sourceLineNo">111</span>     * @param &lt;T&gt; the callback return type<a name="line.111"></a>
+<span class="sourceLineNo">112</span>     */<a name="line.112"></a>
+<span class="sourceLineNo">113</span>    @FunctionalInterface<a name="line.113"></a>
+<span class="sourceLineNo">114</span>    public interface Dao&lt;T&gt; {<a name="line.114"></a>
+<span class="sourceLineNo">115</span>        /**<a name="line.115"></a>
+<span class="sourceLineNo">116</span>         * Manages the JDBC callback, wrapping it in a Spring transaction.  The JDBC template passed<a name="line.116"></a>
+<span class="sourceLineNo">117</span>         * to the callback shares the data source of the transaction manager, and executes within a<a name="line.117"></a>
+<span class="sourceLineNo">118</span>         * transaction template.  Calls {@link #with(JdbcTemplate, TransactionStatus) with} to<a name="line.118"></a>
+<span class="sourceLineNo">119</span>         * execute JDBC methods.<a name="line.119"></a>
+<span class="sourceLineNo">120</span>         *<a name="line.120"></a>
+<span class="sourceLineNo">121</span>         * @param transactionManager the transaction manager, never missing<a name="line.121"></a>
+<span class="sourceLineNo">122</span>         *<a name="line.122"></a>
+<span class="sourceLineNo">123</span>         * @return the callback result<a name="line.123"></a>
+<span class="sourceLineNo">124</span>         *<a name="line.124"></a>
+<span class="sourceLineNo">125</span>         * @throws DataAccessException if JDBC fails<a name="line.125"></a>
+<span class="sourceLineNo">126</span>         */<a name="line.126"></a>
+<span class="sourceLineNo">127</span>        default T using(@Nonnull final DataSourceTransactionManager transactionManager)<a name="line.127"></a>
+<span class="sourceLineNo">128</span>                throws DataAccessException {<a name="line.128"></a>
+<span class="sourceLineNo">129</span>            return new TransactionTemplate(transactionManager).execute(status -&gt; {<a name="line.129"></a>
+<span class="sourceLineNo">130</span>                final JdbcTemplate jdbcTemplate = new JdbcTemplate(<a name="line.130"></a>
+<span class="sourceLineNo">131</span>                        transactionManager.getDataSource());<a name="line.131"></a>
+<span class="sourceLineNo">132</span>                try {<a name="line.132"></a>
+<span class="sourceLineNo">133</span>                    return with(jdbcTemplate, status);<a name="line.133"></a>
+<span class="sourceLineNo">134</span>                } catch (final SQLException e) {<a name="line.134"></a>
+<span class="sourceLineNo">135</span>                    throw jdbcTemplate.getExceptionTranslator().translate(task(), sql(), e);<a name="line.135"></a>
+<span class="sourceLineNo">136</span>                }<a name="line.136"></a>
+<span class="sourceLineNo">137</span>            });<a name="line.137"></a>
+<span class="sourceLineNo">138</span>        }<a name="line.138"></a>
+<span class="sourceLineNo">139</span><a name="line.139"></a>
+<span class="sourceLineNo">140</span>        /**<a name="line.140"></a>
+<span class="sourceLineNo">141</span>         * Executes the callback, passing in the given &lt;var&gt;jdbcTemplate&lt;/var&gt; and transaction<a name="line.141"></a>
+<span class="sourceLineNo">142</span>         * &lt;var&gt;status&lt;/var&gt;.  This is typically implemented as a lambda.<a name="line.142"></a>
+<span class="sourceLineNo">143</span>         *<a name="line.143"></a>
+<span class="sourceLineNo">144</span>         * Exceptions are translated into {@link DataAccessException} instances in {@link<a name="line.144"></a>
+<span class="sourceLineNo">145</span>         * #using(DataSourceTransactionManager) using}.<a name="line.145"></a>
+<span class="sourceLineNo">146</span>         *<a name="line.146"></a>
+<span class="sourceLineNo">147</span>         * @param jdbcTemplate the JDBC template, never missing<a name="line.147"></a>
+<span class="sourceLineNo">148</span>         * @param status the transaction status, never missing<a name="line.148"></a>
+<span class="sourceLineNo">149</span>         *<a name="line.149"></a>
+<span class="sourceLineNo">150</span>         * @return the callback result<a name="line.150"></a>
+<span class="sourceLineNo">151</span>         *<a name="line.151"></a>
+<span class="sourceLineNo">152</span>         * @throws SQLException if JDBC fails<a name="line.152"></a>
+<span class="sourceLineNo">153</span>         */<a name="line.153"></a>
+<span class="sourceLineNo">154</span>        T with(@Nonnull final JdbcTemplate jdbcTemplate, @Nonnull final TransactionStatus status)<a name="line.154"></a>
+<span class="sourceLineNo">155</span>                throws SQLException;<a name="line.155"></a>
+<span class="sourceLineNo">156</span><a name="line.156"></a>
+<span class="sourceLineNo">157</span>        /**<a name="line.157"></a>
+<span class="sourceLineNo">158</span>         * Names the task for the Spring JDBC exception translator for more descriptive error<a name="line.158"></a>
+<span class="sourceLineNo">159</span>         * messages.  Defaults to {@code null}.  Implementors &lt;strong&gt;&lt;/strong&gt; return a non-{@code<a name="line.159"></a>
+<span class="sourceLineNo">160</span>         * null} values, relying on the default otherwise.<a name="line.160"></a>
+<span class="sourceLineNo">161</span>         *<a name="line.161"></a>
+<span class="sourceLineNo">162</span>         * @return the task name<a name="line.162"></a>
+<span class="sourceLineNo">163</span>         *<a name="line.163"></a>
+<span class="sourceLineNo">164</span>         * @see SQLExceptionTranslator#translate(String, String, SQLException)<a name="line.164"></a>
+<span class="sourceLineNo">165</span>         */<a name="line.165"></a>
+<span class="sourceLineNo">166</span>        default String task() {<a name="line.166"></a>
+<span class="sourceLineNo">167</span>            return null;<a name="line.167"></a>
+<span class="sourceLineNo">168</span>        }<a name="line.168"></a>
+<span class="sourceLineNo">169</span><a name="line.169"></a>
+<span class="sourceLineNo">170</span>        /**<a name="line.170"></a>
+<span class="sourceLineNo">171</span>         * Provides the executed SQL for the Spring JDBC exception translator for more descriptive<a name="line.171"></a>
+<span class="sourceLineNo">172</span>         * error messages.  Defaults to {@code null}.  Implementors &lt;strong&gt;&lt;/strong&gt; return a<a name="line.172"></a>
+<span class="sourceLineNo">173</span>         * non-{@code null} values, relying on the default otherwise.<a name="line.173"></a>
+<span class="sourceLineNo">174</span>         *<a name="line.174"></a>
+<span class="sourceLineNo">175</span>         * @return the executed SQL<a name="line.175"></a>
+<span class="sourceLineNo">176</span>         *<a name="line.176"></a>
+<span class="sourceLineNo">177</span>         * @see SQLExceptionTranslator#translate(String, String, SQLException)<a name="line.177"></a>
+<span class="sourceLineNo">178</span>         */<a name="line.178"></a>
+<span class="sourceLineNo">179</span>        default String sql() {<a name="line.179"></a>
+<span class="sourceLineNo">180</span>            return null;<a name="line.180"></a>
+<span class="sourceLineNo">181</span>        }<a name="line.181"></a>
+<span class="sourceLineNo">182</span>    }<a name="line.182"></a>
+<span class="sourceLineNo">183</span>}<a name="line.183"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre>
+</div>
+</body>
+</html>
