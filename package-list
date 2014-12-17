@@ -1,6 +1,11 @@
+hm.binkley.corba
 hm.binkley.dao
 hm.binkley.inject
+hm.binkley.junit
+hm.binkley.lombok
+hm.binkley.lombok.javac
 hm.binkley.util
+hm.binkley.util.concurrent
 hm.binkley.util.function
 hm.binkley.util.logging
 hm.binkley.util.logging.osi

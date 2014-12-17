@@ -48,9 +48,9 @@
 <span class="sourceLineNo">040</span>     * &lt;p&gt;<a name="line.40"></a>
 <span class="sourceLineNo">041</span>     * Do not show status of the logging system.<a name="line.41"></a>
 <span class="sourceLineNo">042</span>     */<a name="line.42"></a>
-<span class="sourceLineNo">043</span>    @SuppressWarnings("ConstantConditions")<a name="line.43"></a>
+<span class="sourceLineNo">043</span>    @SuppressWarnings({"ConstantConditions", "Annotator"})<a name="line.43"></a>
 <span class="sourceLineNo">044</span>    public static void enable() {<a name="line.44"></a>
-<span class="sourceLineNo">045</span>        enable(null, false);<a name="line.45"></a>
+<span class="sourceLineNo">045</span>        enable(null, false); // Publically applicationName is non-null<a name="line.45"></a>
 <span class="sourceLineNo">046</span>    }<a name="line.46"></a>
 <span class="sourceLineNo">047</span><a name="line.47"></a>
 <span class="sourceLineNo">048</span>    /**<a name="line.48"></a>
@@ -63,9 +63,9 @@
 <span class="sourceLineNo">055</span>     * @param showDetail if {@code true} log the status of the logging system including setup<a name="line.55"></a>
 <span class="sourceLineNo">056</span>     * details.<a name="line.56"></a>
 <span class="sourceLineNo">057</span>     */<a name="line.57"></a>
-<span class="sourceLineNo">058</span>    @SuppressWarnings("ConstantConditions")<a name="line.58"></a>
+<span class="sourceLineNo">058</span>    @SuppressWarnings({"ConstantConditions", "Annotator"})<a name="line.58"></a>
 <span class="sourceLineNo">059</span>    public static void enable(final boolean showDetail) {<a name="line.59"></a>
-<span class="sourceLineNo">060</span>        enable(null, showDetail);<a name="line.60"></a>
+<span class="sourceLineNo">060</span>        enable(null, showDetail); // Publically applicationName is non-null<a name="line.60"></a>
 <span class="sourceLineNo">061</span>    }<a name="line.61"></a>
 <span class="sourceLineNo">062</span><a name="line.62"></a>
 <span class="sourceLineNo">063</span>    /**<a name="line.63"></a>
